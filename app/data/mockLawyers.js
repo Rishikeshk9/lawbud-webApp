@@ -1,5 +1,26 @@
 export const mockLawyers = [
   {
+    id: 'ai-lawyer',
+    name: 'LawBud AI Assistant',
+    specialization: 'General Legal Consultation',
+    experience: 'Always Learning',
+    rating: 4.9,
+    location: 'Available 24/7',
+    imageUrl: '/ai-lawyer-avatar.png',
+    bio: 'I am an AI legal assistant powered by advanced language models. I can provide general legal information and guidance across various areas of law. While I cannot provide specific legal advice or replace a human lawyer, I can help you understand legal concepts and point you in the right direction.',
+    isAI: true,
+    reviews: [
+      {
+        userName: 'Sarah M.',
+        comment: 'Very helpful in explaining legal concepts in simple terms.',
+      },
+      {
+        userName: 'John D.',
+        comment: 'Quick responses and accurate information.',
+      },
+    ],
+  },
+  {
     id: '1',
     name: 'Sarah Johnson',
     experience: 12,

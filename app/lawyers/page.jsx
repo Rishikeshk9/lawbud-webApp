@@ -4,7 +4,7 @@ import { useLawyers } from '../contexts/LawyersContext';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
-import { StarIcon } from 'lucide-react';
+import { Award, Bot, StarIcon } from 'lucide-react';
 import { ChatFab } from '@/components/ChatFab';
 
 export default function LawyersPage() {
@@ -66,16 +66,16 @@ export default function LawyersPage() {
       </div>
 
       {/* Lawyers grid */}
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2'>
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
         {filteredLawyers.map((lawyer) => (
           <div
             key={lawyer.id}
-            className='border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer'
+            className='relative border rounded-lg p-2 px-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer'
             onClick={() => router.push(`/lawyers/${lawyer.id}`)}
           >
-            <div className='flex items-center justify-between'>
-              <h2 className='text-xl font-semibold'>{lawyer.name}</h2>
-              <div className='flex items-center mt-2 align-middle'>
+            <div className='flex items-center justify-between '>
+              <h2 className='text-lg font-semibold'>{lawyer.name}</h2>
+              <div className='flex items-center align-middle'>
                 <StarIcon className='w-4 h-4 text-yellow-400 mr-1' />
                 <span className='font-semibold'>{lawyer.rating}</span>
                 <span className='text-gray-500 ml-1 text-xs'>
@@ -83,8 +83,20 @@ export default function LawyersPage() {
                 </span>
               </div>
             </div>
-            <p className='text-gray-600'>{lawyer.specialization}</p>
-            <p className='text-gray-500'>{lawyer.location}</p>
+            <p className='text-gray-600 text-sm'>{lawyer.specialization}</p>
+            <p className='text-gray-500 text-sm'>{lawyer.location}</p>
+            <div className='absolute -bottom-0 right-2 flex gap-2'>
+              {lawyer.isAI && (
+                <div className='   bg-blue-500 text-white text-xs px-2 py-1 rounded-t-lg flex items-center gap-2'>
+                  <Bot className='h-4 w-4' /> Assistant
+                </div>
+              )}
+              {lawyer.rating >= 4.9 && !lawyer.isAI && (
+                <div className='   bg-zinc-800 text-white text-xs px-2 py-1 rounded-t-lg flex items-center gap-2'>
+                  <Award className='h-4 w-4' /> Awarded
+                </div>
+              )}{' '}
+            </div>
           </div>
         ))}
       </div>

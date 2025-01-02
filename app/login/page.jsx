@@ -155,7 +155,7 @@ export default function LoginPage() {
                 {otp.map((digit, index) => (
                   <Input
                     key={index}
-                    type='text'
+                    type='number'
                     name={`otp-${index}`}
                     value={digit}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
