@@ -85,14 +85,14 @@ export default function LawyersPage() {
             </div>
             <p className='text-gray-600 text-sm'>{lawyer.specialization}</p>
             <p className='text-gray-500 text-sm'>{lawyer.location}</p>
-            <div className='absolute -bottom-0 right-2 flex gap-2'>
+            <div className='absolute -bottom-0 right-0  flex gap-2'>
               {lawyer.isAI && (
-                <div className='   bg-blue-500 text-white text-xs px-2 py-1 rounded-t-lg flex items-center gap-2'>
-                  <Bot className='h-4 w-4' /> Assistant
+                <div className='   bg-blue-500 text-white text-xs px-2 py-1 rounded-tl-lg rounded-br-lg flex items-center gap-2'>
+                  <Bot className='h-4 w-4' /> AI
                 </div>
               )}
               {lawyer.rating >= 4.9 && !lawyer.isAI && (
-                <div className='   bg-zinc-800 text-white text-xs px-2 py-1 rounded-t-lg flex items-center gap-2'>
+                <div className='   bg-zinc-800 text-white text-xs px-2 py-1 rounded-tl-lg rounded-br-lg flex items-center gap-2'>
                   <Award className='h-4 w-4' /> Awarded
                 </div>
               )}{' '}

@@ -1,170 +1,157 @@
 export const mockLawyers = [
   {
-    id: 'ai-lawyer',
-    name: 'LawBud AI Assistant',
-    specialization: 'General Legal Consultation',
-    experience: 'Always Learning',
-    rating: 4.9,
-    location: 'Available 24/7',
-    imageUrl: '/ai-lawyer-avatar.png',
-    bio: 'I am an AI legal assistant powered by advanced language models. I can provide general legal information and guidance across various areas of law. While I cannot provide specific legal advice or replace a human lawyer, I can help you understand legal concepts and point you in the right direction.',
-    isAI: true,
-    reviews: [
-      {
-        userName: 'Sarah M.',
-        comment: 'Very helpful in explaining legal concepts in simple terms.',
-      },
-      {
-        userName: 'John D.',
-        comment: 'Quick responses and accurate information.',
-      },
-    ],
-  },
-  {
     id: '1',
-    name: 'Sarah Johnson',
-    experience: 12,
-    specialization: 'Family Law',
-    rating: 4.8,
-    bio: 'Experienced family lawyer specializing in divorce, custody, and adoption cases. Committed to helping families navigate legal challenges.',
-    imageUrl: '/placeholder.svg?height=400&width=400',
-    location: 'New York, NY',
-    reviews: [
+    name: 'Jane Smiths',
+    email: 'jane@example.com',
+    phone: '+1234567890',
+    specialization: 'Criminal Law',
+    experience: '10 years',
+    status: 'verified',
+    joinedDate: '2024-03-01',
+    barCouncilId: 'BAR123456',
+    location: 'Mumbai, India',
+    rating: 4.9,
+    isAI: false,
+    about:
+      'Experienced criminal law attorney with a focus on defending individual rights.',
+    education: [
       {
-        userName: 'Michael R.',
-        comment:
-          'Sarah was incredibly compassionate and professional throughout my divorce case.',
+        degree: 'LLB',
+        institution: 'National Law School of India University',
+        year: '2014',
       },
       {
-        userName: 'Jennifer P.',
-        comment:
-          'Excellent lawyer who truly cares about her clients. Made a difficult custody battle manageable.',
+        degree: 'Bar Council Certification',
+        institution: 'Bar Council of India',
+        year: '2015',
       },
     ],
+    languages: ['English', 'Hindi', 'Marathi'],
+    fees: {
+      consultation: 2000,
+      hourly: 5000,
+    },
+    reviews: [
+      {
+        id: '1',
+        userId: 'user1',
+        rating: 5,
+        comment: 'Excellent service and very professional',
+        date: '2024-02-15',
+      },
+      {
+        id: '2',
+        userId: 'user2',
+        rating: 4.5,
+        comment: 'Very knowledgeable and helpful',
+        date: '2024-02-10',
+      },
+    ],
+    documents: [
+      {
+        id: '1',
+        name: 'Bar Council ID Card',
+        type: 'image/jpeg',
+        uploadDate: '2024-03-01',
+        status: 'verified',
+        url: '/documents/bar-id.jpg',
+      },
+      {
+        id: '2',
+        name: 'Law Degree Certificate',
+        type: 'application/pdf',
+        uploadDate: '2024-03-01',
+        status: 'verified',
+        url: '/documents/degree.pdf',
+      },
+      {
+        id: '3',
+        name: 'Practice License',
+        type: 'application/pdf',
+        uploadDate: '2024-03-01',
+        status: 'pending',
+        url: '/documents/license.pdf',
+      },
+    ],
+    availability: {
+      monday: ['09:00-17:00'],
+      tuesday: ['09:00-17:00'],
+      wednesday: ['09:00-17:00'],
+      thursday: ['09:00-17:00'],
+      friday: ['09:00-17:00'],
+    },
   },
   {
     id: '2',
-    name: 'David Chen',
-    experience: 8,
+    name: 'John Wilson',
+    email: 'john.w@example.com',
+    phone: '+9876543210',
     specialization: 'Corporate Law',
-    rating: 4.6,
-    bio: 'Corporate law specialist with expertise in mergers, acquisitions, and business contracts. Helping businesses thrive legally.',
-    imageUrl: '/placeholder.svg?height=400&width=400',
-    location: 'San Francisco, CA',
-    reviews: [
+    experience: '15 years',
+    status: 'pending',
+    joinedDate: '2024-03-15',
+    barCouncilId: 'BAR789012',
+    location: 'Delhi, India',
+    rating: 4.5,
+    isAI: false,
+    about:
+      'Corporate law specialist with expertise in mergers and acquisitions.',
+    education: [
       {
-        userName: 'Robert K.',
-        comment:
-          "David's expertise in corporate law helped our startup navigate complex regulations.",
-      },
-      {
-        userName: 'Lisa M.',
-        comment:
-          'Thorough, professional, and always available for consultation. Highly recommended.',
+        degree: 'LLB',
+        institution: 'Delhi University',
+        year: '2009',
       },
     ],
+    languages: ['English', 'Hindi'],
+    fees: {
+      consultation: 2500,
+      hourly: 6000,
+    },
+    reviews: [
+      {
+        id: '3',
+        userId: 'user3',
+        rating: 4.5,
+        comment: 'Great corporate law expertise',
+        date: '2024-03-01',
+      },
+    ],
+    documents: [
+      {
+        id: '4',
+        name: 'Bar Council ID',
+        type: 'image/jpeg',
+        uploadDate: '2024-03-15',
+        status: 'pending',
+        url: '/documents/bar-id-2.jpg',
+      },
+    ],
+    availability: {
+      monday: ['10:00-18:00'],
+      tuesday: ['10:00-18:00'],
+      wednesday: ['10:00-18:00'],
+      thursday: ['10:00-18:00'],
+      friday: ['10:00-18:00'],
+    },
   },
   {
     id: '3',
-    name: 'Emily Davis',
-    experience: 15,
-    specialization: 'Criminal Law',
+    name: 'LawBud AI',
+    specialization: 'General Legal Advice',
+    experience: 'AI-Powered',
+    status: 'verified',
+    isAI: true,
+    about:
+      'AI-powered legal assistant trained to provide general legal information and guidance.',
     rating: 4.9,
-    bio: 'Dedicated criminal defense attorney with a track record of successful case outcomes. Passionate about protecting clients’ rights.',
-    imageUrl: '/placeholder.svg?height=400&width=400',
-    location: 'Chicago, IL',
     reviews: [
       {
-        userName: 'John D.',
-        comment:
-          'Emily’s expertise and dedication were crucial in my case. Highly recommend her services.',
-      },
-      {
-        userName: 'Anna S.',
-        comment:
-          'A true professional who goes above and beyond for her clients.',
-      },
-    ],
-  },
-  {
-    id: '4',
-    name: 'Michael Brown',
-    experience: 10,
-    specialization: 'Intellectual Property Law',
-    rating: 4.7,
-    bio: 'Expert in intellectual property law, helping clients protect their innovations and creative works.',
-    imageUrl: '/placeholder.svg?height=400&width=400',
-    location: 'Los Angeles, CA',
-    reviews: [
-      {
-        userName: 'Sophia L.',
-        comment: 'Michael’s guidance was invaluable in securing our patents.',
-      },
-      {
-        userName: 'James T.',
-        comment: 'Highly knowledgeable and always available for advice.',
-      },
-    ],
-  },
-  {
-    id: '5',
-    name: 'Olivia Martinez',
-    experience: 7,
-    specialization: 'Immigration Law',
-    rating: 4.5,
-    bio: 'Compassionate immigration lawyer dedicated to helping clients navigate complex immigration processes.',
-    imageUrl: '/placeholder.svg?height=400&width=400',
-    location: 'Miami, FL',
-    reviews: [
-      {
-        userName: 'Carlos G.',
-        comment: 'Olivia made the immigration process smooth and stress-free.',
-      },
-      {
-        userName: 'Maria H.',
-        comment: 'Her expertise and empathy were greatly appreciated.',
-      },
-    ],
-  },
-  {
-    id: '6',
-    name: 'James Wilson',
-    experience: 20,
-    specialization: 'Environmental Law',
-    rating: 4.8,
-    bio: 'Veteran environmental lawyer with a passion for protecting natural resources and advocating for sustainable practices.',
-    imageUrl: '/placeholder.svg?height=400&width=400',
-    location: 'Seattle, WA',
-    reviews: [
-      {
-        userName: 'Laura B.',
-        comment:
-          'James’s dedication to environmental causes is truly inspiring.',
-      },
-      {
-        userName: 'Tom F.',
-        comment: 'A knowledgeable advocate for sustainable practices.',
-      },
-    ],
-  },
-  {
-    id: '7',
-    name: 'Sophia Lee',
-    experience: 5,
-    specialization: 'Employment Law',
-    rating: 4.4,
-    bio: 'Employment law expert focused on workplace rights and fair treatment for employees.',
-    imageUrl: '/placeholder.svg?height=400&width=400',
-    location: 'Austin, TX',
-    reviews: [
-      {
-        userName: 'Ethan W.',
-        comment:
-          'Sophia helped me understand my rights and resolve a workplace issue.',
-      },
-      {
-        userName: 'Grace N.',
-        comment: 'Professional and supportive throughout the entire process.',
+        id: '4',
+        userId: 'user4',
+        rating: 5,
+        comment: 'Quick and accurate responses',
+        date: '2024-03-10',
       },
     ],
   },

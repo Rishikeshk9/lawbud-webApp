@@ -42,13 +42,13 @@ export function AIChatInterface({ lawyer }) {
   };
 
   return (
-    <div className='flex flex-col h-screen'>
-      <div className='flex items-center gap-4 p-4 bg-black text-white border-b border-gray-800'>
+    <div className='flex flex-col h-screen w-full max-w-3xl mx-auto items-center align-middle bg-black/5'>
+      <div className='max-w-3xl mx-auto fixed top-0   w-full z-50 flex items-center gap-4 p-4 bg-black text-white border-b border-gray-800'>
         <Button
           variant='ghost'
           size='icon'
           onClick={() => router.back()}
-          className='hover:bg-gray-800'
+          className='hover:bg-white/10 hover:text-white'
         >
           <ArrowLeft className='h-5 w-5' />
         </Button>
@@ -67,8 +67,11 @@ export function AIChatInterface({ lawyer }) {
         </div>
       </div>
 
-      <ScrollArea ref={scrollAreaRef} className='flex-1 p-4 bg-[#111]'>
-        <div className='space-y-2'>
+      <ScrollArea
+        ref={scrollAreaRef}
+        className='flex-1 p-4  max-h-[calc(100vh-100px)] my-auto  '
+      >
+        <div className='space-y-2 py-12'>
           {messages.map((message, index) => (
             <div
               key={index}
@@ -84,11 +87,11 @@ export function AIChatInterface({ lawyer }) {
                 <div
                   className={`rounded-lg p-3 shadow-sm ${
                     message.role === 'user'
-                      ? 'bg-primary rounded-tr-none'
-                      : 'bg-gray-800 rounded-tl-none'
+                      ? 'bg-black/5  rounded-tr-none'
+                      : 'bg-white  rounded-tl-none'
                   }`}
                 >
-                  <p className='text-[0.9375rem] text-white whitespace-pre-wrap'>
+                  <p className='text-[0.9375rem] text-black whitespace-pre-wrap'>
                     {message.content}
                   </p>
                   <p className='text-[0.75rem] text-gray-400 text-right mt-1'>
@@ -115,22 +118,22 @@ export function AIChatInterface({ lawyer }) {
         </div>
       </ScrollArea>
 
-      <div className='p-4 bg-black border-t border-gray-800'>
+      <div className='p-4 bg-black border-t border-gray-800 fixed bottom-0  w-full z-50 flex justify-center max-w-3xl mx-auto'>
         <form
           onSubmit={handleSubmit}
-          className='flex gap-2 items-center max-w-3xl mx-auto'
+          className='flex gap-2 items-center max-w-3xl mx-auto w-full'
         >
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder='Type your legal question...'
             disabled={isLoading}
-            className='rounded-full bg-gray-800 border-gray-700 text-white'
+            className='rounded bg-white/10 border-black  text-white w-full'
           />
           <Button
             type='submit'
             disabled={isLoading || !input.trim()}
-            className='rounded-full h-10 w-10 p-0 bg-primary hover:bg-primary/90 flex-shrink-0'
+            className='rounded  h-10 w-10 p-0 bg-primary hover:bg-white/10 flex-shrink-0'
           >
             <Send className='h-5 w-5' />
           </Button>

@@ -1,89 +1,63 @@
 'use client';
 
 import { useState } from 'react';
-import { RoleSelector } from '@/components/role-selector';
-import { BasicInfoForm } from '@/components/basic-info-form';
-import { LawyerInfoForm } from '@/components/lawyer-info-form';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import RoleSelector from '@/components/role-selector';
+import BasicInfoForm from '@/components/basic-info-form';
+import LawyerInfoForm from '@/components/lawyer-info-form';
+import { Stepper, Step } from '@/components/ui/stepper';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
-function RegisterPage() {
+export default function RegisterPage() {
+  const [step, setStep] = useState(1);
   const [role, setRole] = useState('user');
-  const [step, setStep] = useState('basic');
-  const [basicInfo, setBasicInfo] = useState(null);
-  const [otp, setOtp] = useState(['', '', '', '']);
   const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+  });
+  const [otp, setOtp] = useState('');
+  const [errors, setErrors] = useState({});
   const { toast } = useToast();
+  const router = useRouter();
 
-  const handleBasicInfoSubmit = async (data) => {
-    setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setBasicInfo(data);
-      setStep('otp');
-      toast({
-        title: 'OTP Sent',
-        description: 'A One-Time Password has been sent to your mobile number.',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to send OTP. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleOtpChange = (index, value) => {
-    if (value.length > 1) value = value.slice(-1);
-    if (!/^\d*$/.test(value)) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    if (value && index < 3) {
-      const nextInput = document.querySelector(
-        `input[name="otp-${index + 1}"]`
-      );
-      if (nextInput) nextInput.focus();
-    }
-  };
-
-  const handleOtpSubmit = async (e) => {
+  const handleBasicInfoSubmit = async (e) => {
     e.preventDefault();
-    const enteredOtp = otp.join('');
-
-    if (enteredOtp.length !== 4) {
-      toast({
-        title: 'Invalid OTP',
-        description: 'Please enter a valid 4-digit OTP',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setIsLoading(true);
-    try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
 
+    try {
+      // Validate required fields
+      let newErrors = {};
+      if (!formData.name) newErrors.name = 'Name is required';
+      if (!formData.email) newErrors.email = 'Email is required';
+      if (role === 'lawyer' && !formData.phone)
+        newErrors.phone = 'Phone is required for lawyers';
+      if (!formData.location) newErrors.location = 'Location is required';
+
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        throw new Error('Please fill in all required fields');
+      }
+
+      // If user role, proceed to send OTP
       if (role === 'user') {
-        toast({
-          title: 'Registration Complete',
-          description: 'Your account has been created successfully.',
-        });
+        // Here you would make an API call to send OTP
+        await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+        setStep(3);
       } else {
-        setStep('lawyer');
+        // If lawyer role, proceed to lawyer info form
+        setStep(2);
       }
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Verification failed. Please try again.',
+        description: error.message || 'Something went wrong',
         variant: 'destructive',
       });
     } finally {
@@ -91,19 +65,41 @@ function RegisterPage() {
     }
   };
 
-  const handleLawyerInfoSubmit = async (data) => {
+  const handleLawyerInfoSubmit = async (e) => {
+    e.preventDefault();
     setIsLoading(true);
+
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log('Lawyer data:', data);
+      // Here you would make an API call to submit lawyer info
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+      setStep(3);
+    } catch (error) {
       toast({
-        title: 'Profile Created',
-        description: 'Your lawyer profile has been created successfully.',
+        title: 'Error',
+        description: 'Failed to submit lawyer information',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      // Here you would make an API call to verify OTP
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+      router.push('/');
+      toast({
+        title: 'Success',
+        description: 'Registration successful!',
       });
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to create profile. Please try again.',
+        description: 'Invalid OTP. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -111,84 +107,89 @@ function RegisterPage() {
     }
   };
 
-  const goBack = () => {
-    if (step === 'otp') {
-      setStep('basic');
-    } else if (step === 'lawyer') {
-      setStep('otp');
-    }
-  };
-
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8'>
-      <div className='w-full max-w-md space-y-8 bg-white p-8 rounded-xl shadow-lg'>
-        {step !== 'basic' && (
-          <Button variant='ghost' size='sm' className='mb-4' onClick={goBack}>
-            <ArrowLeft className='h-4 w-4 mr-2' />
-            Back
-          </Button>
-        )}
-
-        <div className='text-center'>
-          <h1 className='text-2xl font-bold'>Create your account</h1>
-          <p className='text-gray-600 mt-2'>
-            {step === 'basic'
-              ? 'Enter your details to get started'
-              : step === 'otp'
-              ? 'Enter the verification code'
-              : 'Complete your lawyer profile'}
-          </p>
+    <div className='min-h-screen flex items-center justify-center p-4'>
+      <Card className='w-full max-w-md p-6 space-y-6'>
+        <div className='text-center space-y-2'>
+          <h1 className='text-2xl font-bold'>Create an Account</h1>
+          <p className='text-gray-500'>Join LawBud today</p>
         </div>
 
-        {step === 'basic' && (
-          <div className='space-y-6'>
+        <Stepper currentStep={step} className='mb-6'>
+          <Step>Role</Step>
+          {role === 'lawyer' && <Step>Professional Info</Step>}
+          <Step>Verification</Step>
+        </Stepper>
+
+        {step === 1 && (
+          <form onSubmit={handleBasicInfoSubmit} className='space-y-6'>
             <RoleSelector role={role} setRole={setRole} />
             <BasicInfoForm
-              onSubmit={handleBasicInfoSubmit}
-              isLoading={isLoading}
+              formData={formData}
+              setFormData={setFormData}
+              role={role}
+              errors={errors}
+              setErrors={setErrors}
             />
-            <p className='text-center text-sm text-gray-600'>
-              Already have an account?{' '}
-              <Link href='/login' className='text-primary hover:underline'>
-                Login
-              </Link>
-            </p>
-          </div>
-        )}
-
-        {step === 'otp' && (
-          <form onSubmit={handleOtpSubmit} className='space-y-6'>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium'>Verification Code</label>
-              <div className='flex justify-center gap-2'>
-                {otp.map((digit, index) => (
-                  <Input
-                    key={index}
-                    type='text'
-                    name={`otp-${index}`}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(index, e.target.value)}
-                    className='w-12 h-12 text-center text-lg'
-                    maxLength={1}
-                  />
-                ))}
-              </div>
-            </div>
             <Button type='submit' className='w-full' disabled={isLoading}>
-              {isLoading ? 'Verifying...' : 'Verify OTP'}
+              {isLoading ? 'Loading...' : 'Continue'}
             </Button>
           </form>
         )}
 
-        {step === 'lawyer' && (
-          <LawyerInfoForm
-            onSubmit={handleLawyerInfoSubmit}
-            isLoading={isLoading}
-          />
+        {step === 2 && role === 'lawyer' && (
+          <form onSubmit={handleLawyerInfoSubmit} className='space-y-6'>
+            <LawyerInfoForm />
+            <div className='flex gap-4'>
+              <Button
+                type='button'
+                variant='outline'
+                className='w-full'
+                onClick={() => setStep(1)}
+                disabled={isLoading}
+              >
+                Back
+              </Button>
+              <Button type='submit' className='w-full' disabled={isLoading}>
+                {isLoading ? 'Loading...' : 'Continue'}
+              </Button>
+            </div>
+          </form>
         )}
-      </div>
+
+        {step === 3 && (
+          <form onSubmit={handleVerifyOTP} className='space-y-6'>
+            <div className='text-center'>
+              <p>
+                We've sent a verification code to{' '}
+                <span className='font-medium'>{formData.email}</span>
+              </p>
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='otp'>Verification Code</Label>
+              <Input
+                id='otp'
+                type='text'
+                placeholder='Enter verification code'
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                maxLength={6}
+              />
+            </div>
+            <Button type='submit' className='w-full' disabled={isLoading}>
+              {isLoading ? 'Verifying...' : 'Verify Email'}
+            </Button>
+            <Button
+              type='button'
+              variant='link'
+              className='w-full'
+              onClick={() => setStep(1)}
+            >
+              Change Email
+            </Button>
+          </form>
+        )}
+      </Card>
     </div>
   );
 }
-
-export default RegisterPage;
