@@ -128,7 +128,7 @@ export function AIChatInterface({ lawyer }) {
             onChange={(e) => setInput(e.target.value)}
             placeholder='Type your legal question...'
             disabled={isLoading}
-            className='rounded bg-white/10 border-black  text-white w-full'
+            className='rounded bg-white/10 border-black  text-white w-full text-base'
           />
           <Button
             type='submit'
