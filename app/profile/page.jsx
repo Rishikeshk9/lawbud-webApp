@@ -4,26 +4,70 @@ import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Edit2, MapPin, Mail, Phone, StarIcon } from 'lucide-react';
+import {
+  Edit2,
+  MapPin,
+  Mail,
+  Phone,
+  StarIcon,
+  Verified,
+  Badge,
+  MailWarningIcon,
+  PhoneOff,
+} from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
 import { useLawyers } from '../contexts/LawyersContext';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Warning } from 'postcss';
 
 export default function ProfilePage() {
   const { user } = useUser();
   const { lawyers } = useLawyers();
   const router = useRouter();
+  const [profile, setProfile] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userMetadata, setUserMetadata] = useState(null);
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        if (!session?.session?.user) return;
+
+        //get user details from user table
+        const { data: user, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', session.session.user.email)
+          .single();
+
+        console.log(user);
+        console.log(session.session.user.user_metadata);
+        setProfile(user);
+        setUserMetadata(session.session.user.user_metadata);
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    loadProfile();
+  }, []);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!profile) {
+    return <div>No profile found</div>;
+  }
 
   // Get saved lawyers with full details
-  const savedLawyers = user.savedLawyers
-    .map((id) => lawyers.find((lawyer) => lawyer.id === id))
-    .filter(Boolean); // Remove any undefined values
-
-  // Get recent cases with lawyer details
-  const recentCasesWithDetails = user.recentCases.map((case_) => ({
-    ...case_,
-    lawyer: lawyers.find((l) => l.id === case_.lawyerId),
-  }));
+  const savedLawyers = profile.saved_lawyers
+    ? lawyers.filter((lawyer) => profile.saved_lawyers.includes(lawyer.id))
+    : [];
 
   return (
     <div className='container mx-auto px-4 py-8'>
@@ -31,9 +75,9 @@ export default function ProfilePage() {
         <div className='flex flex-col md:flex-row items-start gap-6'>
           <div className='relative'>
             <Avatar className='h-24 w-24'>
-              <AvatarImage src={user.image} alt={user.name} />
+              <AvatarImage src={profile.avatar_url} alt={profile.name} />
               <AvatarFallback>
-                {user.name
+                {profile.name
                   .split(' ')
                   .map((n) => n[0])
                   .join('')}
@@ -48,20 +92,46 @@ export default function ProfilePage() {
             </Button>
           </div>
           <div className='flex-grow'>
-            <h1 className='text-2xl font-bold mb-4'>{user.name}</h1>
+            <h1 className='text-2xl font-bold mb-4'>{profile.name}</h1>
             <div className='space-y-2'>
               <div className='flex items-center text-gray-600'>
                 <Mail className='h-4 w-4 mr-2' />
-                {user.email}
+                {profile.email}
+                {userMetadata.email_verified ? (
+                  <>
+                    <Verified className='h-4 w-4 ml-2 text-green-500 mr-1' />
+                    <p className='text-xs text-green-500'>Verified</p>
+                  </>
+                ) : (
+                  <>
+                    <MailWarningIcon className='h-4 w-4 ml-2 text-red-500 mr-1  ' />
+                    <p className='text-xs text-red-500'>Unverified</p>
+                  </>
+                )}
               </div>
-              <div className='flex items-center text-gray-600'>
-                <Phone className='h-4 w-4 mr-2' />
-                {user.phone}
-              </div>
-              <div className='flex items-center text-gray-600'>
-                <MapPin className='h-4 w-4 mr-2' />
-                {user.location}
-              </div>
+              {profile.phone && (
+                <div className='flex items-center text-gray-600'>
+                  <Phone className='h-4 w-4 mr-2' />
+                  {profile.phone}
+                  {userMetadata.phone_verified ? (
+                    <>
+                      <Verified className='h-4 w-4 ml-2 text-green-500 mr-1' />
+                      <p className='text-xs text-green-500'>Verified</p>
+                    </>
+                  ) : (
+                    <>
+                      <PhoneOff className='h-4 w-4 ml-2 text-red-500 mr-1' />
+                      <p className='text-xs text-red-500'>Unverified</p>
+                    </>
+                  )}
+                </div>
+              )}
+              {profile.location && (
+                <div className='flex items-center text-gray-600'>
+                  <MapPin className='h-4 w-4 mr-2' />
+                  {profile.location}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -69,61 +139,35 @@ export default function ProfilePage() {
 
       <Tabs defaultValue='saved' className='space-y-4'>
         <TabsList>
-          {/* <TabsTrigger value='cases'>Recent Cases</TabsTrigger> */}
           <TabsTrigger value='saved'>Saved Lawyers</TabsTrigger>
         </TabsList>
 
-        <TabsContent value='cases'>
-          <div className='space-y-4'>
-            {recentCasesWithDetails.map((case_) => (
-              <Card key={case_.id} className='p-4'>
-                <div className='flex justify-between items-start'>
-                  <div>
-                    <h3 className='font-semibold'>{case_.title}</h3>
-                    <p className='text-sm text-gray-500'>
-                      Lawyer: {case_.lawyer?.name}
-                    </p>
-                    <p className='text-sm text-gray-500'>
-                      Date: {new Date(case_.date).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs ${
-                      case_.status === 'Active'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {case_.status}
-                  </span>
-                </div>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
         <TabsContent value='saved'>
           <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-            {savedLawyers.map((lawyer) => (
-              <div
-                key={lawyer.id}
-                className='border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer'
-                onClick={() => router.push(`/lawyers/${lawyer.id}`)}
-              >
-                <div className='flex items-center justify-between'>
-                  <h2 className='text-xl font-semibold'>{lawyer.name}</h2>
-                  <div className='flex items-center mt-2 align-middle'>
-                    <StarIcon className='w-4 h-4 text-yellow-400 mr-1' />
-                    <span className='font-semibold'>{lawyer.rating}</span>
-                    <span className='text-gray-500 ml-1 text-xs'>
-                      ({lawyer.reviews.length})
-                    </span>
+            {savedLawyers.length > 0 ? (
+              savedLawyers.map((lawyer) => (
+                <div
+                  key={lawyer.id}
+                  className='border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer'
+                  onClick={() => router.push(`/lawyers/${lawyer.id}`)}
+                >
+                  <div className='flex items-center justify-between'>
+                    <h2 className='text-xl font-semibold'>{lawyer.name}</h2>
+                    <div className='flex items-center mt-2 align-middle'>
+                      <StarIcon className='w-4 h-4 text-yellow-400 mr-1' />
+                      <span className='font-semibold'>{lawyer.rating}</span>
+                      <span className='text-gray-500 ml-1 text-xs'>
+                        ({lawyer.reviews.length})
+                      </span>
+                    </div>
                   </div>
+                  <p className='text-gray-600'>{lawyer.specialization}</p>
+                  <p className='text-gray-500'>{lawyer.location}</p>
                 </div>
-                <p className='text-gray-600'>{lawyer.specialization}</p>
-                <p className='text-gray-500'>{lawyer.location}</p>
-              </div>
-            ))}
+              ))
+            ) : (
+              <div className='text-center text-gray-500'>Coming Soon!</div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
