@@ -16,8 +16,26 @@ export function AIChatInterface({ lawyer }) {
   const [isLoading, setIsLoading] = useState(false);
   const [chatId, setChatId] = useState(null);
   const scrollAreaRef = useRef(null);
+  const messagesEndRef = useRef(null);
   const { toast } = useToast();
   const router = useRouter();
+
+  // Scroll to bottom function
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Scroll to bottom on initial load
+  useEffect(() => {
+    scrollToBottom();
+  }, []);
 
   // Save message to database
   const saveMessage = async (content, role) => {
@@ -98,13 +116,6 @@ export function AIChatInterface({ lawyer }) {
   useEffect(() => {
     loadChatHistory();
   }, []);
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo(0, scrollAreaRef.current.scrollHeight);
-    }
-  }, [messages]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -194,9 +205,9 @@ export function AIChatInterface({ lawyer }) {
 
       <ScrollArea
         ref={scrollAreaRef}
-        className='flex-1 p-4  max-h-[calc(100vh-100px)] my-auto  '
+        className='flex-1 p-4 w-full max-h-[calc(100vh-8rem)] mt-16'
       >
-        <div className='space-y-2 py-12'>
+        <div className='space-y-4'>
           {messages.map((message, index) => (
             <div
               key={index}
@@ -229,6 +240,7 @@ export function AIChatInterface({ lawyer }) {
               </div>
             </div>
           ))}
+          <div ref={messagesEndRef} />
           {isLoading && (
             <div className='flex justify-start'>
               <div className='flex items-center gap-2 bg-gray-800 rounded-lg p-3 rounded-tl-none shadow-sm'>
