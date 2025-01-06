@@ -1,95 +1,74 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useRouter, usePathname } from 'next/navigation';
 
-const AuthContext = createContext();
+const AuthContext = createContext({});
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const pathname = usePathname();
 
-  // Check authentication status on initial load
+  // Protected routes that require authentication
+  const protectedRoutes = ['/profile', '/chats', '/lawyers/[id]/chat'];
+
+  // Auth pages that should redirect to home if user is authenticated
+  const authPages = ['/login', '/register'];
+
   useEffect(() => {
-    checkAuth();
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const checkAuth = async () => {
-    try {
-      const response = await fetch('/api/auth/verify');
+  // Handle route protection
+  useEffect(() => {
+    if (loading) return;
 
-      if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-      } else {
-        setUser(null);
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      setUser(null);
-    } finally {
-      setLoading(false);
+    // Check if current path matches any protected route patterns
+    const isProtectedRoute = protectedRoutes.some((route) => {
+      // Convert route pattern to regex
+      const pattern = route.replace(/\[.*?\]/g, '[^/]+');
+      const regex = new RegExp(`^${pattern}`);
+      return regex.test(pathname);
+    });
+
+    const isAuthPage = authPages.some((page) => pathname.startsWith(page));
+
+    if (!session && isProtectedRoute) {
+      router.push(`/login?redirectTo=${encodeURIComponent(pathname)}`);
+    } else if (session && isAuthPage) {
+      router.push('/');
     }
-  };
-
-  const login = async (phoneNumber, otp) => {
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ phoneNumber, otp }),
-        credentials: 'include', // Important for cookies
-      });
-
-      if (!response.ok) {
-        throw new Error('Login failed');
-      }
-
-      const { user: userData } = await response.json();
-      setUser(userData);
-
-      return true;
-    } catch (error) {
-      console.error('Login failed:', error);
-      return false;
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include', // Important for cookies
-      });
-
-      setUser(null);
-      router.push('/login');
-    } catch (error) {
-      console.error('Logout failed:', error);
-      // Still clear the user state even if the API call fails
-      setUser(null);
-      router.push('/login');
-    }
-  };
+  }, [session, loading, pathname, router]);
 
   const value = {
-    user,
+    session,
     loading,
-    login,
-    logout,
-    isAuthenticated: !!user,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
+};

@@ -2,104 +2,83 @@
 
 import { useState } from 'react';
 import { Card } from '@/components/ui/card';
+import BasicInfoForm from '@/components/basic-info-form';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
-import RoleSelector from '@/components/role-selector';
-import BasicInfoForm from '@/components/basic-info-form';
-import LawyerInfoForm from '@/components/lawyer-info-form';
-import { Stepper, Step } from '@/components/ui/stepper';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import Link from 'next/link';
 
 export default function RegisterPage() {
-  const [step, setStep] = useState(1);
-  const [role, setRole] = useState('user');
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
     location: '',
   });
-  const [otp, setOtp] = useState('');
   const [errors, setErrors] = useState({});
-  const { toast } = useToast();
-  const router = useRouter();
 
-  const handleBasicInfoSubmit = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
+
+    // Validate form data
+    let hasErrors = false;
+    let newErrors = {};
+
+    if (!formData.name) newErrors.name = 'Name is required';
+    if (!formData.email) newErrors.email = 'Email is required';
+    if (!formData.location) newErrors.location = 'Location is required';
+
+    hasErrors = Object.keys(newErrors).length > 0;
+    setErrors(newErrors);
+
+    if (hasErrors) return;
 
     try {
-      // Validate required fields
-      let newErrors = {};
-      if (!formData.name) newErrors.name = 'Name is required';
-      if (!formData.email) newErrors.email = 'Email is required';
-      if (role === 'lawyer' && !formData.phone)
-        newErrors.phone = 'Phone is required for lawyers';
-      if (!formData.location) newErrors.location = 'Location is required';
+      setIsLoading(true);
 
-      if (Object.keys(newErrors).length > 0) {
-        setErrors(newErrors);
-        throw new Error('Please fill in all required fields');
-      }
-
-      // If user role, proceed to send OTP
-      if (role === 'user') {
-        // Here you would make an API call to send OTP
-        await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-        setStep(3);
-      } else {
-        // If lawyer role, proceed to lawyer info form
-        setStep(2);
-      }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error.message || 'Something went wrong',
-        variant: 'destructive',
+      // Create user in Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: Math.random().toString(36).slice(-8), // Generate a random password
+        options: {
+          data: {
+            name: formData.name,
+            role: 'user',
+          },
+        },
       });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const handleLawyerInfoSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
+      if (authError) throw authError;
 
-    try {
-      // Here you would make an API call to submit lawyer info
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-      setStep(3);
-    } catch (error) {
+      // Create user profile in the database
+      const { error: profileError } = await supabase.from('users').insert([
+        {
+          id: authData.user.id,
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          location: formData.location,
+          role: 'user',
+        },
+      ]);
+
+      if (profileError) throw profileError;
+
       toast({
-        title: 'Error',
-        description: 'Failed to submit lawyer information',
-        variant: 'destructive',
+        title: 'Registration Successful',
+        description: 'Please check your email to verify your account.',
       });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  const handleVerifyOTP = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    try {
-      // Here you would make an API call to verify OTP
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
-      router.push('/');
-      toast({
-        title: 'Success',
-        description: 'Registration successful!',
-      });
+      router.push('/login');
     } catch (error) {
+      console.error('Registration error:', error);
       toast({
-        title: 'Error',
-        description: 'Invalid OTP. Please try again.',
+        title: 'Registration Failed',
+        description: error.message,
         variant: 'destructive',
       });
     } finally {
@@ -112,83 +91,40 @@ export default function RegisterPage() {
       <Card className='w-full max-w-md p-6 space-y-6'>
         <div className='text-center space-y-2'>
           <h1 className='text-2xl font-bold'>Create an Account</h1>
-          <p className='text-gray-500'>Join LawBud today</p>
+          <p className='text-gray-500'>Join our legal community</p>
         </div>
 
-        <Stepper currentStep={step} className='mb-6'>
-          <Step>Role</Step>
-          {role === 'lawyer' && <Step>Professional Info</Step>}
-          <Step>Verification</Step>
-        </Stepper>
+        <form onSubmit={handleSubmit} className='space-y-6'>
+          <BasicInfoForm
+            formData={formData}
+            setFormData={setFormData}
+            role='user'
+            errors={errors}
+            setErrors={setErrors}
+          />
 
-        {step === 1 && (
-          <form onSubmit={handleBasicInfoSubmit} className='space-y-6'>
-            <RoleSelector role={role} setRole={setRole} />
-            <BasicInfoForm
-              formData={formData}
-              setFormData={setFormData}
-              role={role}
-              errors={errors}
-              setErrors={setErrors}
-            />
-            <Button type='submit' className='w-full' disabled={isLoading}>
-              {isLoading ? 'Loading...' : 'Continue'}
-            </Button>
-          </form>
-        )}
+          <Button type='submit' className='w-full' disabled={isLoading}>
+            {isLoading ? 'Processing...' : 'Create Account'}
+          </Button>
+        </form>
 
-        {step === 2 && role === 'lawyer' && (
-          <form onSubmit={handleLawyerInfoSubmit} className='space-y-6'>
-            <LawyerInfoForm />
-            <div className='flex gap-4'>
-              <Button
-                type='button'
-                variant='outline'
-                className='w-full'
-                onClick={() => setStep(1)}
-                disabled={isLoading}
-              >
-                Back
-              </Button>
-              <Button type='submit' className='w-full' disabled={isLoading}>
-                {isLoading ? 'Loading...' : 'Continue'}
-              </Button>
-            </div>
-          </form>
-        )}
-
-        {step === 3 && (
-          <form onSubmit={handleVerifyOTP} className='space-y-6'>
-            <div className='text-center'>
-              <p>
-                We've sent a verification code to{' '}
-                <span className='font-medium'>{formData.email}</span>
-              </p>
-            </div>
-            <div className='space-y-2'>
-              <Label htmlFor='otp'>Verification Code</Label>
-              <Input
-                id='otp'
-                type='text'
-                placeholder='Enter verification code'
-                value={otp}
-                onChange={(e) => setOtp(e.target.value)}
-                maxLength={6}
-              />
-            </div>
-            <Button type='submit' className='w-full' disabled={isLoading}>
-              {isLoading ? 'Verifying...' : 'Verify Email'}
-            </Button>
-            <Button
-              type='button'
-              variant='link'
-              className='w-full'
-              onClick={() => setStep(1)}
+        <div className='text-center space-y-2'>
+          <p className='text-sm text-gray-500'>
+            Already have an account?{' '}
+            <Link href='/login' className='text-primary hover:underline'>
+              Login
+            </Link>
+          </p>
+          <p className='text-sm text-gray-500'>
+            Are you a lawyer?{' '}
+            <Link
+              href='/lawyer-registration'
+              className='text-primary hover:underline'
             >
-              Change Email
-            </Button>
-          </form>
-        )}
+              Register as a Lawyer
+            </Link>
+          </p>
+        </div>
       </Card>
     </div>
   );

@@ -4,6 +4,7 @@ import { LawyersProvider } from './contexts/LawyersContext';
 import { UserProvider } from './contexts/UserContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { Navbar } from '@/components/Navbar';
+import { Toaster } from '@/components/ui/toaster';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -35,6 +36,7 @@ export default function RootLayout({ children }) {
                 <Navbar />
                 <main className='flex-1'>{children}</main>
               </div>
+              <Toaster />
             </LawyersProvider>
           </UserProvider>
         </AuthProvider>

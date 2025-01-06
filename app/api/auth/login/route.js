@@ -1,48 +1,40 @@
 import { NextResponse } from 'next/server';
-import jwt from 'jsonwebtoken';
-
-const JWT_SECRET = process.env.JWT_SECRET;
+import { supabase } from '@/lib/supabase';
+import { emailService } from '@/lib/email';
+import { otpService } from '@/lib/redis';
 
 export async function POST(request) {
   try {
-    const { phoneNumber, otp } = await request.json();
+    const { email } = await request.json();
 
-    // In production, verify OTP against stored OTP
-    // For demo, accept "1234" as valid OTP
-    if (otp !== '1234') {
-      return NextResponse.json({ error: 'Invalid OTP' }, { status: 401 });
+    // Check if user exists
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select()
+      .eq('email', email)
+      .single();
+
+    if (!existingUser) {
+      return NextResponse.json({ message: 'User not found' }, { status: 404 });
     }
 
-    // Mock user data - in production, fetch from database
-    const user = {
-      id: '1',
-      name: 'John Doe',
-      phoneNumber,
-      email: 'john@example.com',
-    };
+    // Generate OTP
+    const otp = Math.random().toString().substring(2, 8);
 
-    // Generate JWT token
-    const token = jwt.sign({ userId: user.id, phoneNumber }, JWT_SECRET, {
-      expiresIn: '7d',
-    });
+    // Store OTP in Redis
+    await otpService.storeOTP(email, otp);
 
-    // Create the response
-    const response = NextResponse.json({ token, user });
+    // Send OTP via email
+    await emailService.sendOTP(email, otp);
 
-    // Set the token as an HTTP-only cookie
-    response.cookies.set('token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: '/',
-    });
-
-    return response;
+    return NextResponse.json(
+      { message: 'OTP sent successfully' },
+      { status: 200 }
+    );
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { message: 'Failed to send OTP' },
       { status: 500 }
     );
   }

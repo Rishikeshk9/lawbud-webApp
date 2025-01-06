@@ -15,12 +15,6 @@ export default function ChatsPage() {
       timestamp: '2024-03-20T10:30:00',
       unread: 2,
     },
-    {
-      lawyerId: '2',
-      lastMessage: 'I will review your case and get back to you.',
-      timestamp: '2024-03-19T15:45:00',
-      unread: 0,
-    },
   ];
 
   const { lawyers } = useLawyers();

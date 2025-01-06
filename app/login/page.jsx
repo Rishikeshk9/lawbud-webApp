@@ -1,53 +1,50 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/app/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Cookies from 'js-cookie';
 
 export default function LoginPage() {
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '']);
-  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [email, setEmail] = useState('');
+  const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [showOtpInput, setShowOtpInput] = useState(false);
   const { toast } = useToast();
-  const { login } = useAuth();
+  const router = useRouter();
 
-  const validatePhoneNumber = (number) => {
-    const phoneRegex = /^[6-9]\d{9}$/;
-    return phoneRegex.test(number);
-  };
-
-  const handleSendOtp = async (e) => {
+  const handleSendOTP = async (e) => {
     e.preventDefault();
+    if (!email || isLoading) return;
 
-    if (!validatePhoneNumber(phoneNumber)) {
-      toast({
-        title: 'Invalid Phone Number',
-        description: 'Please enter a valid 10-digit phone number',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsLoading(true);
     try {
-      // In production, make API call to send OTP
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setIsLoading(true);
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+
+      if (error) throw error;
 
       setShowOtpInput(true);
       toast({
         title: 'OTP Sent',
-        description: 'A verification code has been sent to your phone',
+        description: 'Please check your email for the verification code.',
       });
     } catch (error) {
+      console.error('Login error:', error);
       toast({
         title: 'Error',
-        description: 'Failed to send OTP. Please try again.',
+        description: error.message,
         variant: 'destructive',
       });
     } finally {
@@ -55,56 +52,47 @@ export default function LoginPage() {
     }
   };
 
-  const handleOtpChange = (index, value) => {
-    if (value.length > 1) value = value.slice(-1);
-    if (!/^\d*$/.test(value)) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    if (value && index < 3) {
-      const nextInput = document.querySelector(
-        `input[name="otp-${index + 1}"]`
-      );
-      if (nextInput) nextInput.focus();
-    }
-  };
-
-  const handleVerifyOtp = async (e) => {
+  const handleVerifyOTP = async (e) => {
     e.preventDefault();
-    const enteredOtp = otp.join('');
+    if (!otp || isLoading) return;
 
-    if (enteredOtp.length !== 4) {
-      toast({
-        title: 'Invalid OTP',
-        description: 'Please enter a valid 4-digit OTP',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsLoading(true);
     try {
-      const success = await login(phoneNumber, enteredOtp);
+      setIsLoading(true);
 
-      if (success) {
-        toast({
-          title: 'Success',
-          description: 'Login successful!',
-        });
-        router.push('/lawyers');
-      } else {
-        toast({
-          title: 'Invalid OTP',
-          description: 'The OTP you entered is incorrect',
-          variant: 'destructive',
-        });
-      }
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token: otp,
+        type: 'magiclink',
+      });
+
+      if (error) throw error;
+
+      // Get the session data
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) throw new Error('No session created');
+
+      // Store the access token in a cookie
+      Cookies.set('access_token', session.access_token, {
+        expires: 7, // 7 days
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'Lax',
+      });
+
+      toast({
+        title: 'Success',
+        description: 'Login successful!',
+      });
+
+      // Redirect to home page
+      window.location.href = '/';
     } catch (error) {
+      console.error('Verification error:', error);
       toast({
         title: 'Error',
-        description: 'Login failed. Please try again.',
+        description: error.message,
         variant: 'destructive',
       });
     } finally {
@@ -113,72 +101,68 @@ export default function LoginPage() {
   };
 
   return (
-    <div className='min-h-screen flex items-center justify-center bg-gray-50'>
-      <div className='w-full max-w-md p-6 space-y-6 bg-white rounded-xl shadow-lg'>
-        <div className='text-center'>
-          <h1 className='text-2xl font-bold'>Welcome to LawBud</h1>
-          <p className='text-gray-600 mt-2'>
-            {showOtpInput
-              ? 'Enter the verification code'
-              : 'Login with your phone number'}
-          </p>
+    <div className='min-h-screen flex items-center justify-center p-4'>
+      <Card className='w-full max-w-md p-6 space-y-6'>
+        <div className='text-center space-y-2'>
+          <h1 className='text-2xl font-bold'>Welcome Back</h1>
+          <p className='text-gray-500'>Login to your account</p>
         </div>
 
-        {!showOtpInput ? (
-          <form onSubmit={handleSendOtp} className='space-y-4'>
+        <form onSubmit={showOtpInput ? handleVerifyOTP : handleSendOTP}>
+          <div className='space-y-4'>
             <div className='space-y-2'>
-              <label className='text-sm font-medium'>Phone Number</label>
+              <Label htmlFor='email'>Email</Label>
               <Input
-                type='tel'
-                placeholder='Enter your phone number'
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                maxLength={10}
-                className='w-full'
+                id='email'
+                type='email'
+                placeholder='Enter your email'
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={showOtpInput || isLoading}
+                required
               />
             </div>
-            <Button type='submit' className='w-full' disabled={isLoading}>
-              {isLoading ? 'Sending...' : 'Send OTP'}
-            </Button>
-            <p className='text-center text-sm text-gray-600'>
-              Don't have an account?{' '}
-              <Link href='/register' className='text-primary hover:underline'>
-                Register
-              </Link>
-            </p>
-          </form>
-        ) : (
-          <form onSubmit={handleVerifyOtp} className='space-y-4'>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium'>Verification Code</label>
-              <div className='flex justify-center gap-2'>
-                {otp.map((digit, index) => (
-                  <Input
-                    key={index}
-                    type='number'
-                    name={`otp-${index}`}
-                    value={digit}
-                    onChange={(e) => handleOtpChange(index, e.target.value)}
-                    className='w-12 h-12 text-center text-lg'
-                    maxLength={1}
-                  />
-                ))}
+
+            {showOtpInput && (
+              <div className='space-y-2'>
+                <Label htmlFor='otp'>Verification Code</Label>
+                <Input
+                  id='otp'
+                  type='text'
+                  placeholder='Enter verification code'
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  disabled={isLoading}
+                  required
+                />
               </div>
-            </div>
-            <Button type='submit' className='w-full' disabled={isLoading}>
-              {isLoading ? 'Verifying...' : 'Verify OTP'}
-            </Button>
+            )}
+
             <Button
-              type='button'
-              variant='link'
+              type='submit'
               className='w-full'
-              onClick={() => setShowOtpInput(false)}
+              disabled={
+                isLoading || (!showOtpInput && !email) || (showOtpInput && !otp)
+              }
             >
-              Change Phone Number
+              {isLoading
+                ? 'Processing...'
+                : showOtpInput
+                ? 'Verify Code'
+                : 'Send Code'}
             </Button>
-          </form>
-        )}
-      </div>
+          </div>
+        </form>
+
+        <div className='text-center space-y-2'>
+          <p className='text-sm text-gray-500'>
+            Don&apos;t have an account?{' '}
+            <Link href='/register' className='text-primary hover:underline'>
+              Register
+            </Link>
+          </p>
+        </div>
+      </Card>
     </div>
   );
 }

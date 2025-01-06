@@ -1,49 +1,65 @@
-import OpenAI from 'openai';
+import { OpenAI } from 'openai';
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const SYSTEM_PROMPT = `You are an experienced lawyer with expertise in multiple areas of Indian law. Your role is to:
-1. Provide legal information and general guidance
-2. Help users understand their legal rights and obligations
-3. Explain legal concepts in simple terms
-4. Suggest possible courses of action
-
-Important notes:
-- Always clarify that you're providing general information, not legal advice
-- Recommend consulting with a human lawyer for specific cases
-- Be professional yet approachable
-- Focus on the jurisdiction mentioned by the user (default to Indian law if not specified)
-- Cite relevant laws and regulations when applicable`;
-
 export async function POST(request) {
   try {
-    const { messages } = await request.json();
+    const { message, chatId } = await request.json();
 
-    // Ensure all messages have valid content
-    const validMessages = messages.map((msg) => ({
-      role: msg.role,
-      content: msg.content || '', // Ensure content is never null
-    }));
+    if (!message) {
+      return NextResponse.json(
+        { error: 'Message is required' },
+        { status: 400 }
+      );
+    }
 
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'system', content: SYSTEM_PROMPT }, ...validMessages],
+    // Get the chat history for context
+    const { data: messages, error: historyError } = await supabase
+      .from('ai_messages')
+      .select('content, role')
+      .eq('chat_id', chatId)
+      .order('created_at', { ascending: true });
+
+    if (historyError) throw historyError;
+
+    // Prepare conversation history for the AI
+    const conversationHistory = [
+      {
+        role: 'system',
+        content: `You are an experienced lawyer with expertise in multiple areas of Indian law. Your role is to:
+          1. Provide legal information and general guidance
+          2. Help users understand their legal rights and obligations
+          3. Explain legal concepts in simple terms
+          4. Suggest possible courses of action
+          
+          Important: Always include a disclaimer that your responses are for informational purposes only and should not be considered as legal advice. Recommend consulting with a qualified lawyer for specific legal matters.`,
+      },
+      ...(messages?.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      })) || []),
+      {
+        role: 'user',
+        content: message,
+      },
+    ];
+
+    const completion = await openai.chat.completions.create({
+      model: process.env.AI_MODEL || 'gpt-4-turbo-preview',
+      messages: conversationHistory,
       temperature: 0.7,
       max_tokens: 500,
     });
 
-    // Ensure we have a valid response
-    const content =
-      response.choices[0]?.message?.content ||
-      'I apologize, but I could not generate a response.';
+    const aiResponse =
+      completion.choices[0]?.message?.content ||
+      'I apologize, but I am unable to provide a response at this time.';
 
-    return NextResponse.json({
-      message: content,
-      role: 'assistant',
-    });
+    return NextResponse.json({ message: aiResponse }, { status: 200 });
   } catch (error) {
     console.error('AI Chat error:', error);
     return NextResponse.json(

@@ -20,7 +20,7 @@ const SPECIALIZATIONS = [
   'Environmental Law',
 ];
 
-export default function LawyerInfoForm() {
+export default function LawyerInfoForm({ onSubmit }) {
   const [formData, setFormData] = useState({
     barCouncilId: '',
     sanatNumber: '',
@@ -82,6 +82,7 @@ export default function LawyerInfoForm() {
     }
 
     setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleChange = (e) => {
@@ -93,7 +94,6 @@ export default function LawyerInfoForm() {
   const handleFileChange = (e) => {
     const { name, files } = e.target;
     if (files && files[0]) {
-      // Validate file type (PDF only)
       if (files[0].type !== 'application/pdf') {
         setErrors((prev) => ({
           ...prev,
@@ -101,7 +101,6 @@ export default function LawyerInfoForm() {
         }));
         return;
       }
-      // Validate file size (max 5MB)
       if (files[0].size > 5 * 1024 * 1024) {
         setErrors((prev) => ({
           ...prev,
@@ -125,8 +124,27 @@ export default function LawyerInfoForm() {
     });
   };
 
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    // Validate all fields
+    let isValid = true;
+    Object.keys(formData).forEach((field) => {
+      if (!validateField(field, formData[field])) {
+        isValid = false;
+      }
+    });
+
+    if (!isValid) {
+      return;
+    }
+
+    // If validation passes, call the onSubmit prop with the form data
+    onSubmit(formData);
+  };
+
   return (
-    <div className='space-y-4'>
+    <form onSubmit={handleSubmit} className='space-y-4'>
       <div className='space-y-2'>
         <Label htmlFor='barCouncilId'>
           Bar Council ID <span className='text-red-500'>*</span>
@@ -310,6 +328,6 @@ export default function LawyerInfoForm() {
         )}
         <p className='text-sm text-gray-500'>Maximum file size: 5MB</p>
       </div>
-    </div>
+    </form>
   );
 }
