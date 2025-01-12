@@ -3,8 +3,8 @@ import './globals.css';
 import { LawyersProvider } from './contexts/LawyersContext';
 import { UserProvider } from './contexts/UserContext';
 import { AuthProvider } from './contexts/AuthContext';
-import { Navbar } from '@/components/Navbar';
 import { Toaster } from '@/components/ui/toaster';
+import ClientLayout from './client-layout';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -32,10 +32,7 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <UserProvider>
             <LawyersProvider>
-              <div className='relative min-h-screen flex flex-col'>
-                <Navbar />
-                <main className='flex-1'>{children}</main>
-              </div>
+              <ClientLayout>{children}</ClientLayout>
               <Toaster />
             </LawyersProvider>
           </UserProvider>
