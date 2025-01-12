@@ -147,7 +147,7 @@ export const mockLawyers = [
     rating: 4.9,
     reviews: [
       {
-        id: '4',
+        id: '0',
         userId: 'user4',
         rating: 5,
         comment: 'Quick and accurate responses',

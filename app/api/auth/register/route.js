@@ -1,94 +1,98 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
-import { db } from '@/lib/db';
-import { storage } from '@/lib/storage';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
-export async function POST(request) {
+export async function POST(req) {
   try {
-    const formData = await request.formData();
-    const userData = {
-      email: formData.get('email'),
-      name: formData.get('name'),
-      phone: formData.get('phone'),
-      location: formData.get('location'),
-      role: formData.get('role'),
-    };
+    const formData = await req.formData();
 
-    // Check if user already exists
-    const { data: existingUser } = await supabase
+    // Extract data from formData
+    const name = formData.get('name');
+    const email = formData.get('email');
+    const phone = formData.get('phone');
+    const sanatNumber = formData.get('sanatNumber');
+    const specializations = JSON.parse(formData.get('specializations'));
+    const experience = formData.get('experience');
+    const state = formData.get('state');
+    const district = formData.get('district');
+    const languages = formData.get('languages');
+    const role = formData.get('role');
+
+    // Get files
+    const degreeCertificate = formData.get('degreeCertificate');
+    const barMembershipCertificate = formData.get('barMembershipCertificate');
+
+    // Upload certificates to storage
+    const { data: degreeUrl, error: degreeError } = await supabaseAdmin.storage
+      .from('certificates')
+      .upload(
+        `degree/${Date.now()}-${degreeCertificate.name}`,
+        degreeCertificate
+      );
+
+    if (degreeError) throw degreeError;
+
+    const { data: barUrl, error: barError } = await supabaseAdmin.storage
+      .from('certificates')
+      .upload(
+        `bar/${Date.now()}-${barMembershipCertificate.name}`,
+        barMembershipCertificate
+      );
+
+    if (barError) throw barError;
+
+    // Begin transaction
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
+      .insert({
+        name,
+        email,
+        phone,
+        role,
+      })
       .select()
-      .eq('email', userData.email)
       .single();
 
-    if (existingUser) {
-      return NextResponse.json(
-        { message: 'User already exists' },
-        { status: 400 }
-      );
-    }
+    if (userError) throw userError;
 
-    // Create new user
-    const user = await db.users.create(userData);
-
-    // If registering as a lawyer, handle lawyer-specific data
-    if (userData.role === 'lawyer') {
-      const lawyerData = {
+    // Insert lawyer details
+    const { error: lawyerError, data: lawyer } = await supabaseAdmin
+      .from('lawyers')
+      .insert({
         user_id: user.id,
-        bar_council_id: formData.get('barCouncilId'),
-        sanat_number: formData.get('sanatNumber'),
-        specializations: JSON.parse(formData.get('specializations')),
-        experience: parseInt(formData.get('experience')),
-        about: formData.get('about'),
-        languages: formData
-          .get('languages')
-          .split(',')
-          .map((lang) => lang.trim()),
-      };
+        sanat_number: sanatNumber,
+        experience,
+        state_id: state,
+        district_id: district,
+        languages: languages.split(',').map((lang) => lang.trim()),
+        degree_certificate_url: degreeUrl.path,
+        bar_membership_url: barUrl.path,
+        verification_status: 'pending',
+      })
+      .select()
+      .single();
 
-      const lawyer = await db.lawyers.create(lawyerData);
+    if (lawyerError) throw lawyerError;
 
-      // Handle document uploads
-      const degreeCertificate = formData.get('degreeCertificate');
-      const barMembershipCertificate = formData.get('barMembershipCertificate');
+    // Insert specializations
+    const specializationInserts = specializations.map((spec) => ({
+      lawyer_id: lawyer.id,
+      specialization_id: spec,
+    }));
 
-      if (degreeCertificate) {
-        const degreeDoc = await storage.uploadDocument(
-          degreeCertificate,
-          `lawyers/${lawyer.id}/documents`
-        );
-        await db.documents.create({
-          lawyer_id: lawyer.id,
-          name: 'Degree Certificate',
-          type: degreeCertificate.type,
-          url: degreeDoc.url,
-          path: degreeDoc.path,
-        });
-      }
+    const { error: specError } = await supabaseAdmin
+      .from('lawyer_specializations')
+      .insert(specializationInserts);
 
-      if (barMembershipCertificate) {
-        const barDoc = await storage.uploadDocument(
-          barMembershipCertificate,
-          `lawyers/${lawyer.id}/documents`
-        );
-        await db.documents.create({
-          lawyer_id: lawyer.id,
-          name: 'Bar Membership Certificate',
-          type: barMembershipCertificate.type,
-          url: barDoc.url,
-          path: barDoc.path,
-        });
-      }
-    }
+    if (specError) throw specError;
 
-    return NextResponse.json(
-      { message: 'Registration successful' },
-      { status: 201 }
-    );
+    return NextResponse.json({
+      message: 'Registration successful',
+      user: user,
+    });
   } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json(
-      { message: 'Registration failed' },
+      { error: error.message || 'Registration failed' },
       { status: 500 }
     );
   }

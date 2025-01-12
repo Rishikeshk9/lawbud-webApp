@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import LocationDisplay from './LocationDisplay';
 
 export function Navbar() {
   const { lawyers } = useLawyers();
@@ -54,6 +55,7 @@ export function Navbar() {
 
           {/* Desktop: Search + Profile */}
           <div className='hidden md:flex md:flex-1 md:items-center md:justify-end md:gap-4'>
+            <LocationDisplay />
             <div className='flex-1 max-w-sm'>
               <LawyerSearch lawyers={lawyers} />
             </div>
@@ -68,8 +70,9 @@ export function Navbar() {
       </div>
 
       {/* Mobile: Search Bar (shown below navbar) */}
-      <div className='border-b md:hidden px-4 pb-4'>
+      <div className='border-b md:hidden px-4 pb-4 flex flex-row gap-2'>
         <LawyerSearch lawyers={lawyers} />
+        <LocationDisplay />
       </div>
     </nav>
   );

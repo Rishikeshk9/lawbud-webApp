@@ -13,7 +13,12 @@ export function AuthProvider({ children }) {
   const pathname = usePathname();
 
   // Protected routes that require authentication
-  const protectedRoutes = ['/profile', '/chats', '/lawyers/[id]/chat'];
+  const protectedRoutes = [
+    '/profile',
+    '/chats',
+    '/lawyers/[id]/chat',
+    '/lawyers',
+  ];
 
   // Auth pages that should redirect to home if user is authenticated
   const authPages = ['/login', '/register'];

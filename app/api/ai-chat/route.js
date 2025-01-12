@@ -17,39 +17,53 @@ export async function POST(request) {
       );
     }
 
-    // Get the chat history for context
-    const { data: messages, error: historyError } = await supabase
-      .from('ai_messages')
-      .select('content, role')
-      .eq('chat_id', chatId)
-      .order('created_at', { ascending: true });
-
-    if (historyError) throw historyError;
-
-    // Prepare conversation history for the AI
-    const conversationHistory = [
+    let conversationHistory = [
       {
         role: 'system',
-        content: `You are an experienced lawyer with expertise in multiple areas of Indian law. Your role is to:
-          1. Provide legal information and general guidance
+        content: `You are an experienced lawyer with expertise in multiple areas of Indian law based on the Bharatiya Nyaya Sanhita BNS, 2023. Your role is to:
+          1. Make sure you have a clear thought & Provide legal information on any legal matter only with the help of BNS, 2023.
           2. Help users understand their legal rights and obligations
           3. Explain legal concepts in simple terms
-          4. Suggest possible courses of action
+          4. Give detailed answers to the user's question
           
-          Important: Always include a disclaimer that your responses are for informational purposes only and should not be considered as legal advice. Recommend consulting with a qualified lawyer for specific legal matters.`,
-      },
-      ...(messages?.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })) || []),
-      {
-        role: 'user',
-        content: message,
+ `,
       },
     ];
 
+    // Only fetch chat history if chatId exists
+    if (chatId) {
+      console.log('chatId', chatId);
+      // Get the chat history for context
+      const { data: messages, error: historyError } = await supabase
+        .from('ai_messages')
+        .select('content, role')
+        .eq('chat_id', chatId)
+        .order('created_at', { ascending: true });
+
+      if (historyError) throw historyError;
+
+      // Add message history if it exists
+      if (messages && messages.length > 0) {
+        conversationHistory = [
+          ...conversationHistory,
+          ...messages.map((msg) => ({
+            role: msg.role,
+            content: msg.content,
+          })),
+        ];
+      }
+    }
+
+    // Add current message
+    conversationHistory.push({
+      role: 'user',
+      content: message,
+    });
+
     const completion = await openai.chat.completions.create({
-      model: process.env.AI_MODEL || 'gpt-4-turbo-preview',
+      model:
+        process.env.AI_MODEL ||
+        'ft:gpt-4o-mini-2024-07-18:personal:bns:AnD2Z4Pz',
       messages: conversationHistory,
       temperature: 0.7,
       max_tokens: 500,

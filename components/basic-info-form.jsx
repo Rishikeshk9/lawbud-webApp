@@ -35,10 +35,6 @@ export default function BasicInfoForm({
           delete newErrors.phone;
         }
         break;
-      case 'location':
-        if (!value) newErrors.location = 'Location is required';
-        else delete newErrors.location;
-        break;
     }
 
     setErrors(newErrors);
@@ -97,23 +93,6 @@ export default function BasicInfoForm({
           error={errors.phone}
         />
         {errors.phone && <p className='text-sm text-red-500'>{errors.phone}</p>}
-      </div>
-
-      <div className='space-y-2'>
-        <Label htmlFor='location'>
-          Location <span className='text-red-500'>*</span>
-        </Label>
-        <Input
-          id='location'
-          name='location'
-          placeholder='Enter your location'
-          value={formData.location}
-          onChange={handleChange}
-          error={errors.location}
-        />
-        {errors.location && (
-          <p className='text-sm text-red-500'>{errors.location}</p>
-        )}
       </div>
     </div>
   );

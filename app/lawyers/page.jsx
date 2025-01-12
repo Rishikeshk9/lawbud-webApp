@@ -3,9 +3,12 @@
 import { useLawyers } from '../contexts/LawyersContext';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
-import { Award, Bot, StarIcon } from 'lucide-react';
-import { ChatFab } from '@/components/ChatFab';
+import { Award, Bot, MapPin, Star, MessageSquare } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { getDistrictName, getStateName } from '@/lib/location-data';
 
 export default function LawyersPage() {
   const { lawyers, isLoading, error } = useLawyers();
@@ -13,11 +16,7 @@ export default function LawyersPage() {
   const router = useRouter();
 
   if (isLoading) {
-    return (
-      <div className='text-center h-screen flex items-center justify-center'>
-        Loading lawyers...
-      </div>
-    );
+    return <LoadingSkeleton />;
   }
 
   if (error) {
@@ -26,24 +25,32 @@ export default function LawyersPage() {
 
   // Get unique specializations
   const specializations = [
-    ...new Set(lawyers.map((lawyer) => lawyer.specialization)),
+    ...new Set(
+      lawyers
+        .filter((lawyer) => !lawyer.isAI)
+        .flatMap((lawyer) => lawyer.specializations || [])
+    ),
   ];
 
   // Filter lawyers based on selected specialization
   const filteredLawyers = selectedSpecialization
     ? lawyers.filter(
-        (lawyer) => lawyer.specialization === selectedSpecialization
+        (lawyer) =>
+          lawyer.isAI ||
+          lawyer.specializations?.includes(selectedSpecialization)
       )
     : lawyers;
 
   return (
-    <div className='container mx-auto px-4 py-4'>
+    <div className='container mx-auto px-4 py-8'>
+      <h1 className='text-2xl font-bold mb-6'>Legal Assistance</h1>
+
       {/* Specialization filters */}
-      <div className='mb-4'>
+      <div className='mb-6'>
         <div className='flex flex-wrap gap-2'>
           <Badge
             variant={selectedSpecialization === null ? 'default' : 'outline'}
-            className='cursor-pointer hover:bg-primary/90'
+            className='cursor-pointer  '
             onClick={() => setSelectedSpecialization(null)}
           >
             All
@@ -56,7 +63,7 @@ export default function LawyersPage() {
                   ? 'default'
                   : 'outline'
               }
-              className='cursor-pointer hover:bg-primary/90'
+              className='cursor-pointer  '
               onClick={() => setSelectedSpecialization(specialization)}
             >
               {specialization}
@@ -66,42 +73,101 @@ export default function LawyersPage() {
       </div>
 
       {/* Lawyers grid */}
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
         {filteredLawyers.map((lawyer) => (
-          <div
+          <Card
             key={lawyer.id}
-            className='relative border rounded-lg p-2 px-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer'
-            onClick={() => router.push(`/lawyers/${lawyer.id}`)}
+            className='p-6 hover:shadow-lg transition-shadow cursor-pointer'
+            onClick={() =>
+              lawyer.isAI
+                ? router.push('/lawyers/ai-assistant')
+                : router.push(`/lawyers/${lawyer.id}`)
+            }
           >
-            <div className='flex items-center justify-between '>
-              <h2 className='text-lg font-semibold'>{lawyer.name}</h2>
-              <div className='flex items-center align-middle'>
-                <StarIcon className='w-4 h-4 text-yellow-400 mr-1' />
-                <span className='font-semibold'>{lawyer.rating}</span>
-                <span className='text-gray-500 ml-1 text-xs'>
-                  ({lawyer.reviews.length})
-                </span>
+            <div className='flex items-start gap-4'>
+              <Avatar
+                className={`h-12 w-12 ${lawyer.isAI ? 'bg-primary' : ''}`}
+              >
+                <AvatarFallback>
+                  {lawyer.isAI ? (
+                    <Bot className='h-6 w-6' />
+                  ) : (
+                    lawyer.name.charAt(0)
+                  )}
+                </AvatarFallback>
+              </Avatar>
+              <div className='flex-1'>
+                <div className='flex justify-between items-start mb-2'>
+                  <h3 className='font-semibold text-lg'>{lawyer.name}</h3>
+                  <div className='flex items-center'>
+                    <Star className='h-4 w-4 text-yellow-400 mr-1' />
+                    <span className='text-sm'>{lawyer.rating}</span>
+                  </div>
+                </div>
+
+                {lawyer.isAI ? (
+                  <p className='text-sm text-muted-foreground mb-4'>
+                    Get instant legal guidance 24/7
+                  </p>
+                ) : (
+                  <>
+                    <div className='flex flex-wrap gap-2 mb-4'>
+                      {lawyer.specializations?.map((spec, index) => (
+                        <Badge key={index} variant='secondary'>
+                          {spec}
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className='space-y-2'>
+                      <div className='flex items-center text-sm text-muted-foreground'>
+                        <MapPin className='h-4 w-4 mr-1' />
+                        <span>
+                          {lawyer.state}, {lawyer.district}
+                        </span>
+                      </div>
+                      <div className='flex items-center text-sm text-muted-foreground'>
+                        <Award className='h-4 w-4 mr-1' />
+                        <span>{lawyer.experience} years experience</span>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
-            <p className='text-gray-600 text-sm'>{lawyer.specialization}</p>
-            <p className='text-gray-500 text-sm'>{lawyer.location}</p>
-            <div className='absolute -bottom-0 right-0  flex gap-2'>
-              {lawyer.isAI && (
-                <div className='   bg-blue-500 text-white text-xs px-2 py-1 rounded-tl-lg rounded-br-lg flex items-center gap-2'>
-                  <Bot className='h-4 w-4' /> AI
-                </div>
-              )}
-              {lawyer.rating >= 4.9 && !lawyer.isAI && (
-                <div className='   bg-zinc-800 text-white text-xs px-2 py-1 rounded-tl-lg rounded-br-lg flex items-center gap-2'>
-                  <Award className='h-4 w-4' /> Awarded
-                </div>
-              )}{' '}
-            </div>
-          </div>
+          </Card>
         ))}
       </div>
+    </div>
+  );
+}
 
-      <ChatFab />
+function LoadingSkeleton() {
+  return (
+    <div className='container mx-auto px-4 py-8'>
+      <Skeleton className='h-8 w-48 mb-6' />
+      <div className='flex gap-2 mb-6'>
+        {[...Array(4)].map((_, i) => (
+          <Skeleton key={i} className='h-8 w-20' />
+        ))}
+      </div>
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+        {[...Array(6)].map((_, i) => (
+          <Card key={i} className='p-6'>
+            <div className='flex items-start gap-4'>
+              <Skeleton className='h-12 w-12 rounded-full' />
+              <div className='flex-1'>
+                <Skeleton className='h-6 w-3/4 mb-2' />
+                <div className='flex gap-2 mb-4'>
+                  <Skeleton className='h-5 w-16' />
+                  <Skeleton className='h-5 w-16' />
+                </div>
+                <Skeleton className='h-4 w-full mb-2' />
+                <Skeleton className='h-4 w-2/3' />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

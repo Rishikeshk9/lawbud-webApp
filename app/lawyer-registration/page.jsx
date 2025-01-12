@@ -1,191 +1,165 @@
 'use client';
 
-import { useState } from 'react';
-import { Card } from '@/components/ui/card';
-import { Stepper, Step } from '@/components/ui/stepper';
-import BasicInfoStep from '@/components/registration/BasicInfoStep';
-import DocumentUploadStep from '@/components/registration/DocumentUploadStep';
-import ProfessionalInfoStep from '@/components/registration/ProfessionalInfoStep';
+import { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter } from 'next/navigation';
+import { Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { storage } from '@/lib/storage';
-import { supabase } from '@/lib/supabase';
+import { lawyerRegistrationSchema } from '@/lib/validations/lawyer-registration';
+
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { getStates, getDistricts } from '@/lib/location';
+
+const SPECIALIZATIONS = [
+  {
+    id: 'civil-law',
+    label: 'Civil Law',
+  },
+  {
+    id: 'criminal-law',
+    label: 'Criminal Law',
+  },
+  {
+    id: 'corporate-law',
+    label: 'Corporate Law',
+  },
+  {
+    id: 'family-law',
+    label: 'Family Law',
+  },
+  {
+    id: 'constitutional-law',
+    label: 'Constitutional Law',
+  },
+  {
+    id: 'intellectual-property-law',
+    label: 'Intellectual Property Law',
+  },
+  {
+    id: 'labor-law',
+    label: 'Labor Law',
+  },
+  {
+    id: 'tax-law',
+    label: 'Tax Law',
+  },
+  {
+    id: 'real-estate-law',
+    label: 'Real Estate Law',
+  },
+  {
+    id: 'environmental-law',
+    label: 'Environmental Law',
+  },
+];
 
 export default function LawyerRegistrationPage() {
-  const [step, setStep] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const [formData, setFormData] = useState({
-    // Step 1: Basic Info
-    name: '',
-    email: '',
-    phone: '',
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [states, setStates] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [selectedState, setSelectedState] = useState(null);
 
-    // Step 2: Documents
-    sanatNumber: '',
-    degreeCertificate: null,
-    barMembershipCertificate: null,
-
-    // Step 3: Professional Info
-    experience: '',
-    specialization: '',
-    city: '',
-    state: '',
-    languages: '',
+  const form = useForm({
+    resolver: zodResolver(lawyerRegistrationSchema),
+    defaultValues: {
+      name: '',
+      email: '',
+      phone: '',
+      sanatNumber: '',
+      degreeCertificate: null,
+      barMembershipCertificate: null,
+      specializations: [],
+      experience: '',
+      state: '',
+      district: '',
+      languages: '',
+      role: 'lawyer',
+    },
   });
 
-  const handleBasicInfoSubmit = async (data) => {
-    try {
-      setIsLoading(true);
-
-      // First create the user account
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
-        password: Math.random().toString(36).slice(-8), // Generate a random password
-        options: {
-          data: {
-            name: data.name,
-            phone: data.phone,
-            role: 'lawyer',
-          },
-        },
-      });
-
-      if (authError) throw authError;
-
-      // Check session immediately after signup
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-      console.log('Session after signup:', session); // Debug log
-
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        throw sessionError;
-      }
-
-      if (!session) {
-        // If no session, try to sign in with the credentials
-        const { data: signInData, error: signInError } =
-          await supabase.auth.signInWithPassword({
-            email: data.email,
-            password: Math.random().toString(36).slice(-8), // Use the same password generation
-          });
-
-        if (signInError) throw signInError;
-        console.log('Session after sign in:', signInData.session); // Debug log
-      }
-
-      setFormData((prev) => ({ ...prev, ...data }));
-      setStep(2);
-
-      toast({
-        title: 'Account Created',
-        description: 'Please check your email for verification.',
-      });
-    } catch (error) {
-      console.error('Registration error:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to create account',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    async function fetchStates() {
+      const statesData = await getStates();
+      setStates(statesData);
     }
-  };
+    fetchStates();
+  }, []);
 
-  const handleDocumentUpload = async (data) => {
-    try {
-      setIsLoading(true);
-
-      // Check if user is authenticated
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session) {
-        throw new Error('Please complete email verification first');
+  useEffect(() => {
+    async function fetchDistricts() {
+      if (selectedState) {
+        const districtsData = await getDistricts(selectedState);
+        setDistricts(districtsData);
+      } else {
+        setDistricts([]);
       }
-
-      // Upload documents to Supabase Storage
-      const degreeDoc = await storage.uploadDocument(
-        data.degreeCertificate,
-        `lawyer-documents/${session.session.user.id}`
-      );
-      const barDoc = await storage.uploadDocument(
-        data.barMembershipCertificate,
-        `lawyer-documents/${session.session.user.id}`
-      );
-
-      setFormData((prev) => ({
-        ...prev,
-        ...data,
-        degreeCertificateUrl: degreeDoc.url,
-        barMembershipCertificateUrl: barDoc.url,
-      }));
-
-      setStep(3);
-    } catch (error) {
-      console.error('Document upload error:', error);
-      toast({
-        title: 'Error',
-        description:
-          error.message || 'Failed to upload documents. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
     }
-  };
+    fetchDistricts();
+  }, [selectedState]);
 
-  const handleFinalSubmit = async (data) => {
+  async function onSubmit(data) {
     try {
       setIsLoading(true);
+      const formData = new FormData();
 
-      // Get current session
-      const { data: session } = await supabase.auth.getSession();
-      if (!session?.session) {
-        throw new Error('Authentication required');
+      Object.keys(data).forEach((key) => {
+        if (key === 'specializations') {
+          formData.append(key, JSON.stringify(data[key]));
+        } else if (key === 'role') {
+          formData.append(key, 'lawyer');
+        } else {
+          formData.append(key, data[key]);
+        }
+      });
+
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Registration failed');
       }
-
-      // Create lawyer profile in Supabase
-      const { error } = await supabase.from('lawyers').insert([
-        {
-          user_id: session.session.user.id,
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          sanat_number: formData.sanatNumber,
-          degree_certificate_url: formData.degreeCertificateUrl,
-          bar_membership_url: formData.barMembershipCertificateUrl,
-          experience: parseInt(data.experience),
-          specialization: data.specialization,
-          city: data.city,
-          state: data.state,
-          languages: data.languages.split(',').map((lang) => lang.trim()),
-          status: 'pending',
-        },
-      ]);
-
-      if (error) throw error;
 
       toast({
         title: 'Registration Successful',
-        description:
-          'Your registration is complete. We will review your application shortly.',
+        description: 'Your application has been submitted for review.',
       });
 
-      // Redirect to login
-      window.location.href = '/login';
+      router.push('/login');
     } catch (error) {
       console.error('Registration error:', error);
       toast({
-        title: 'Error',
-        description: 'Failed to complete registration. Please try again.',
+        title: 'Registration Failed',
+        description: 'Please try again later.',
         variant: 'destructive',
       });
     } finally {
       setIsLoading(false);
     }
-  };
+  }
 
   return (
     <div className='min-h-screen flex items-center justify-center p-4 bg-gray-50'>
@@ -195,37 +169,303 @@ export default function LawyerRegistrationPage() {
           <p className='text-gray-500'>Join our legal community</p>
         </div>
 
-        <Stepper currentStep={step} className='mb-8'>
-          <Step>Basic Information</Step>
-          <Step>Document Upload</Step>
-          <Step>Professional Details</Step>
-        </Stepper>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <FormField
+                control={form.control}
+                name='name'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        {step === 1 && (
-          <BasicInfoStep
-            initialData={formData}
-            onSubmit={handleBasicInfoSubmit}
-            isLoading={isLoading}
-          />
-        )}
+              <FormField
+                control={form.control}
+                name='email'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input type='email' {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        {step === 2 && (
-          <DocumentUploadStep
-            initialData={formData}
-            onSubmit={handleDocumentUpload}
-            onBack={() => setStep(1)}
-            isLoading={isLoading}
-          />
-        )}
+              <FormField
+                control={form.control}
+                name='phone'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-        {step === 3 && (
-          <ProfessionalInfoStep
-            initialData={formData}
-            onSubmit={handleFinalSubmit}
-            onBack={() => setStep(2)}
-            isLoading={isLoading}
-          />
-        )}
+              <FormField
+                control={form.control}
+                name='sanatNumber'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Sanat Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <FormField
+                control={form.control}
+                name='degreeCertificate'
+                render={({ field: { value, onChange, ...field } }) => (
+                  <FormItem>
+                    <FormLabel>Degree Certificate</FormLabel>
+                    <FormControl>
+                      <div className='flex items-center gap-2'>
+                        <Input
+                          type='file'
+                          accept='application/pdf,image/*'
+                          className='hidden'
+                          onChange={(e) => onChange(e.target.files?.[0])}
+                          {...field}
+                        />
+                        <Button
+                          type='button'
+                          variant='outline'
+                          className='w-full'
+                          onClick={() =>
+                            document
+                              .querySelector(`input[name='degreeCertificate']`)
+                              .click()
+                          }
+                        >
+                          <Upload className='w-4 h-4 mr-2' />
+                          {value?.name || 'Upload Certificate'}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='barMembershipCertificate'
+                render={({ field: { value, onChange, ...field } }) => (
+                  <FormItem>
+                    <FormLabel>Bar Membership Certificate</FormLabel>
+                    <FormControl>
+                      <div className='flex items-center gap-2'>
+                        <Input
+                          type='file'
+                          accept='application/pdf,image/*'
+                          className='hidden'
+                          onChange={(e) => onChange(e.target.files?.[0])}
+                          {...field}
+                        />
+                        <Button
+                          type='button'
+                          variant='outline'
+                          className='w-full'
+                          onClick={() =>
+                            document
+                              .querySelector(
+                                `input[name='barMembershipCertificate']`
+                              )
+                              .click()
+                          }
+                        >
+                          <Upload className='w-4 h-4 mr-2' />
+                          {value?.name || 'Upload Certificate'}
+                        </Button>
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name='specializations'
+              render={() => (
+                <FormItem>
+                  <div className='mb-4'>
+                    <FormLabel>Specializations</FormLabel>
+                    <FormDescription>
+                      Select your areas of legal expertise
+                    </FormDescription>
+                  </div>
+                  <div className='grid grid-cols-2 gap-4'>
+                    {SPECIALIZATIONS.map((specialization) => (
+                      <FormField
+                        key={specialization.id}
+                        control={form.control}
+                        name='specializations'
+                        render={({ field }) => {
+                          return (
+                            <FormItem
+                              key={specialization.id}
+                              className='flex flex-row items-start space-x-3 space-y-0'
+                            >
+                              <FormControl>
+                                <Checkbox
+                                  checked={field.value?.includes(
+                                    specialization.id
+                                  )}
+                                  onCheckedChange={(checked) => {
+                                    return checked
+                                      ? field.onChange([
+                                          ...field.value,
+                                          specialization.id,
+                                        ])
+                                      : field.onChange(
+                                          field.value?.filter(
+                                            (value) =>
+                                              value !== specialization.id
+                                          )
+                                        );
+                                  }}
+                                />
+                              </FormControl>
+                              <FormLabel className='text-sm font-normal'>
+                                {specialization.label}
+                              </FormLabel>
+                            </FormItem>
+                          );
+                        }}
+                      />
+                    ))}
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='experience'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Years of Experience</FormLabel>
+                  <FormControl>
+                    <Input type='number' min='0' {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+              <FormField
+                control={form.control}
+                name='state'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>State</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        setSelectedState(value);
+                        // Reset district when state changes
+                        form.setValue('district', '');
+                      }}
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder='Select your state' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {states.map((state) => (
+                          <SelectItem
+                            key={state.id}
+                            value={state.id.toString()}
+                          >
+                            {state.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='district'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>District</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={!selectedState}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder='Select your district' />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {districts.map((district) => (
+                          <SelectItem
+                            key={district.id}
+                            value={district.id.toString()}
+                          >
+                            {district.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <FormField
+              control={form.control}
+              name='languages'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Languages</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder='e.g., English, Hindi, Marathi'
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <Button type='submit' className='w-full' disabled={isLoading}>
+              {isLoading ? 'Submitting...' : 'Submit Registration'}
+            </Button>
+          </form>
+        </Form>
       </Card>
     </div>
   );

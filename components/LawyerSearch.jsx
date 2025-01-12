@@ -42,7 +42,7 @@ export function LawyerSearch({ lawyers }) {
   };
 
   return (
-    <div className='relative w-full max-w-sm' ref={commandRef}>
+    <div className='relative w-full max-w-md' ref={commandRef}>
       <Command className='rounded-lg border shadow '>
         <CommandInput
           placeholder='Search lawyers by name or specialization...'

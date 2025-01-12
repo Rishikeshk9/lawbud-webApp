@@ -21,6 +21,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Warning } from 'postcss';
+import LocationDisplay from '@/components/LocationDisplay';
 
 export default function ProfilePage() {
   const { user } = useUser();
