@@ -60,23 +60,17 @@ export default function LawyerRegistrationPage() {
   });
 
   useEffect(() => {
-    async function fetchStates() {
-      const statesData = await getStates();
-      setStates(statesData);
-    }
-    fetchStates();
+    const statesData = getStates();
+    setStates(statesData);
   }, []);
 
   useEffect(() => {
-    async function fetchDistricts() {
-      if (selectedState) {
-        const districtsData = await getDistricts(selectedState);
-        setDistricts(districtsData);
-      } else {
-        setDistricts([]);
-      }
+    if (selectedState) {
+      const districtsData = getDistricts(selectedState);
+      setDistricts(districtsData);
+    } else {
+      setDistricts([]);
     }
-    fetchDistricts();
   }, [selectedState]);
 
   async function onSubmit(data) {
