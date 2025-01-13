@@ -100,6 +100,50 @@ export default function LoginPage() {
     }
   };
 
+  const handleVerify = async (email) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          // User not found
+          toast({
+            title: 'Account not found',
+            description: 'Please register first to continue.',
+            variant: 'destructive',
+          });
+          router.push('/register');
+          return;
+        }
+        throw new Error(data.error || 'Failed to send OTP');
+      }
+
+      toast({
+        title: 'OTP Sent',
+        description: 'Please check your email for the verification code.',
+      });
+      setShowOtpInput(true);
+    } catch (error) {
+      console.error('Error:', error);
+      toast({
+        title: 'Error',
+        description: error.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className='min-h-screen flex items-center justify-center p-4'>
       <Card className='w-full max-w-md p-6 space-y-6'>

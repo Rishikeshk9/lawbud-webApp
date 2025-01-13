@@ -1,64 +1,49 @@
+import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
-import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-
-export async function POST(request) {
+export async function POST(req) {
   try {
-    const { email, otp } = await request.json();
+    const { email } = await req.json();
 
-    // For testing purposes, accept '1234' as valid OTP
-    if (otp !== '1234') {
-      return NextResponse.json({ message: 'Invalid OTP' }, { status: 400 });
-    }
-
-    // Get user from database
-    const { data: user, error } = await supabase
+    // First check if user exists in the users table
+    const { data: existingUser, error: userError } = await supabase
       .from('users')
-      .select('*')
+      .select('id, email')
       .eq('email', email)
       .single();
 
-    if (error || !user) {
-      return NextResponse.json({ message: 'User not found' }, { status: 404 });
+    if (userError || !existingUser) {
+      return NextResponse.json(
+        { error: 'User not found. Please register first.' },
+        { status: 404 }
+      );
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      {
-        userId: user.id,
-        email: user.email,
-        role: user.role,
+    // If user exists, proceed with OTP
+    const { data, error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: false, // Prevent creating new auth users
       },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    // Set HTTP-only cookie with the JWT token
-    const response = NextResponse.json(
-      {
-        message: 'Login successful',
-        user,
-      },
-      { status: 200 }
-    );
-
-    response.cookies.set({
-      name: 'token',
-      value: token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
-    return response;
+    if (error) {
+      console.error('Error sending OTP:', error);
+      return NextResponse.json(
+        { error: 'Failed to send OTP' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      message: 'OTP sent successfully',
+      data,
+    });
   } catch (error) {
-    console.error('Verification error:', error);
+    console.error('Server error:', error);
     return NextResponse.json(
-      { message: 'Verification failed' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
