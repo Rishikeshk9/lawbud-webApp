@@ -17,7 +17,6 @@ export default function RegisterPage() {
     name: '',
     email: '',
     phone: '',
-    location: '',
   });
   const [errors, setErrors] = useState({});
 
@@ -30,7 +29,6 @@ export default function RegisterPage() {
 
     if (!formData.name) newErrors.name = 'Name is required';
     if (!formData.email) newErrors.email = 'Email is required';
-    if (!formData.location) newErrors.location = 'Location is required';
 
     hasErrors = Object.keys(newErrors).length > 0;
     setErrors(newErrors);
@@ -47,6 +45,8 @@ export default function RegisterPage() {
         options: {
           data: {
             name: formData.name,
+            phone: formData.phone,
+            email: formData.email,
             role: 'user',
           },
         },
@@ -61,7 +61,6 @@ export default function RegisterPage() {
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
-          location: formData.location,
           role: 'user',
         },
       ]);

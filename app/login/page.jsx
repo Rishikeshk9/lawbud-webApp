@@ -26,14 +26,29 @@ export default function LoginPage() {
     try {
       setIsLoading(true);
 
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+      // First verify if user exists
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ email }),
       });
 
-      if (error) throw error;
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          toast({
+            title: 'Account not found',
+            description: 'Please register first to continue.',
+            variant: 'destructive',
+          });
+          router.push('/register');
+          return;
+        }
+        throw new Error(data.error || 'Failed to send OTP');
+      }
 
       setShowOtpInput(true);
       toast({
@@ -90,50 +105,6 @@ export default function LoginPage() {
       window.location.href = '/';
     } catch (error) {
       console.error('Verification error:', error);
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleVerify = async (email) => {
-    try {
-      setIsLoading(true);
-      const response = await fetch('/api/auth/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          // User not found
-          toast({
-            title: 'Account not found',
-            description: 'Please register first to continue.',
-            variant: 'destructive',
-          });
-          router.push('/register');
-          return;
-        }
-        throw new Error(data.error || 'Failed to send OTP');
-      }
-
-      toast({
-        title: 'OTP Sent',
-        description: 'Please check your email for the verification code.',
-      });
-      setShowOtpInput(true);
-    } catch (error) {
-      console.error('Error:', error);
       toast({
         title: 'Error',
         description: error.message,
