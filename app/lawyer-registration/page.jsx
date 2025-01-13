@@ -73,6 +73,10 @@ export default function LawyerRegistrationPage() {
     }
   }, [selectedState]);
 
+  useEffect(() => {
+    //  console.log(form.getValues());
+  }, [form.getValues()]);
+
   async function onSubmit(data) {
     try {
       setIsLoading(true);
@@ -188,7 +192,7 @@ export default function LawyerRegistrationPage() {
                 name='sanatNumber'
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Sanat Number *</FormLabel>
+                    <FormLabel>Sanad Number *</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
@@ -198,7 +202,7 @@ export default function LawyerRegistrationPage() {
               />
             </div>
 
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <div className='grid grid-cols-1 md:grid-cols-1 gap-4'>
               <Alert>
                 <Terminal className='h-4 w-4' />
                 <AlertTitle>Heads up!</AlertTitle>
@@ -206,77 +210,81 @@ export default function LawyerRegistrationPage() {
                   Documents should be in PDF. File size should be less than 5MB.
                 </AlertDescription>
               </Alert>
-              <FormField
-                control={form.control}
-                name='degreeCertificate'
-                render={({ field: { value, onChange, ...field } }) => (
-                  <FormItem>
-                    <FormLabel>Degree Certificate *</FormLabel>
-                    <FormControl>
-                      <div className='flex items-center gap-2'>
-                        <Input
-                          type='file'
-                          accept='application/pdf,image/*'
-                          className='hidden'
-                          onChange={(e) => onChange(e.target.files?.[0])}
-                          {...field}
-                        />
-                        <Button
-                          type='button'
-                          variant='outline'
-                          className='w-full'
-                          onClick={() =>
-                            document
-                              .querySelector(`input[name='degreeCertificate']`)
-                              .click()
-                          }
-                        >
-                          <Upload className='w-4 h-4 mr-2' />
-                          {value?.name || 'Upload Certificate'}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <FormField
+                  control={form.control}
+                  name='degreeCertificate'
+                  render={({ field: { value, onChange, ...field } }) => (
+                    <FormItem>
+                      <FormLabel>Degree Certificate *</FormLabel>
+                      <FormControl>
+                        <div className='flex items-center gap-2'>
+                          <Input
+                            type='file'
+                            accept='application/pdf,image/*'
+                            className='hidden'
+                            onChange={(e) => onChange(e.target.files?.[0])}
+                            {...field}
+                          />
+                          <Button
+                            type='button'
+                            variant='outline'
+                            className='w-full'
+                            onClick={() =>
+                              document
+                                .querySelector(
+                                  `input[name='degreeCertificate']`
+                                )
+                                .click()
+                            }
+                          >
+                            <Upload className='w-4 h-4 mr-2' />
+                            {value?.name || 'Upload Certificate'}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name='barMembershipCertificate'
-                render={({ field: { value, onChange, ...field } }) => (
-                  <FormItem>
-                    <FormLabel>Bar Membership Certificate *</FormLabel>
-                    <FormControl>
-                      <div className='flex items-center gap-2'>
-                        <Input
-                          type='file'
-                          accept='application/pdf,image/*'
-                          className='hidden'
-                          onChange={(e) => onChange(e.target.files?.[0])}
-                          {...field}
-                        />
-                        <Button
-                          type='button'
-                          variant='outline'
-                          className='w-full'
-                          onClick={() =>
-                            document
-                              .querySelector(
-                                `input[name='barMembershipCertificate']`
-                              )
-                              .click()
-                          }
-                        >
-                          <Upload className='w-4 h-4 mr-2' />
-                          {value?.name || 'Upload Certificate'}
-                        </Button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name='barMembershipCertificate'
+                  render={({ field: { value, onChange, ...field } }) => (
+                    <FormItem>
+                      <FormLabel>Bar Membership Certificate *</FormLabel>
+                      <FormControl>
+                        <div className='flex items-center gap-2'>
+                          <Input
+                            type='file'
+                            accept='application/pdf,image/*'
+                            className='hidden'
+                            onChange={(e) => onChange(e.target.files?.[0])}
+                            {...field}
+                          />
+                          <Button
+                            type='button'
+                            variant='outline'
+                            className='w-full'
+                            onClick={() =>
+                              document
+                                .querySelector(
+                                  `input[name='barMembershipCertificate']`
+                                )
+                                .click()
+                            }
+                          >
+                            <Upload className='w-4 h-4 mr-2' />
+                            {value?.name || 'Upload Certificate'}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <FormField
@@ -336,7 +344,7 @@ export default function LawyerRegistrationPage() {
               )}
             />
 
-            <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+            <div className='grid grid-cols-1 md:grid-cols-1 gap-4'>
               <Alert>
                 <Terminal className='h-4 w-4' />
                 <AlertTitle>Heads up!</AlertTitle>
@@ -345,73 +353,75 @@ export default function LawyerRegistrationPage() {
                   your area.
                 </AlertDescription>
               </Alert>
-              <FormField
-                control={form.control}
-                name='state'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>State *</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        setSelectedState(value);
-                        // Reset district when state changes
-                        form.setValue('district', '');
-                      }}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder='Select your state' />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {states.map((state) => (
-                          <SelectItem
-                            key={state.id}
-                            value={state.id.toString()}
-                          >
-                            {state.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                <FormField
+                  control={form.control}
+                  name='state'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>State *</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setSelectedState(value);
+                          // Reset district when state changes
+                          form.setValue('district', '');
+                        }}
+                        value={field.value}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder='Select your state' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {states.map((state) => (
+                            <SelectItem
+                              key={state.id}
+                              value={state.id.toString()}
+                            >
+                              {state.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name='district'
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>District *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={!selectedState}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder='Select your district' />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {districts.map((district) => (
-                          <SelectItem
-                            key={district.id}
-                            value={district.id.toString()}
-                          >
-                            {district.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name='district'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>District *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={!selectedState}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder='Select your district' />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {districts.map((district) => (
+                            <SelectItem
+                              key={district.id}
+                              value={district.id.toString()}
+                            >
+                              {district.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             </div>
 
             <FormField

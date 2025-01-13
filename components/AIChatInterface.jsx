@@ -495,7 +495,7 @@ export function AIChatInterface({ lawyer }) {
               onChange={(e) => setInput(e.target.value)}
               placeholder='Type your message...'
               disabled={isLoading}
-              className='flex-1 text-white ring-0 focus:ring-0 focus:outline-none'
+              className='flex-1 text-white ring-0 focus:ring-0 focus:outline-none w-full'
             />
             <Button type='submit' disabled={isLoading}>
               <Send className='h-4 w-4' />

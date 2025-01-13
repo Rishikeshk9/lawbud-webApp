@@ -1,16 +1,16 @@
 'use client';
 
-import { useLawyers } from '../contexts/LawyersContext';
-import { useState } from 'react';
+import { useLawyers } from '@/app/contexts/LawyersContext';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useRouter } from 'next/navigation';
 import { Award, Bot, MapPin, Star, MessageSquare } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { getDistrictName, getStateName } from '@/lib/location-data';
+import { ChatFab } from '@/components/ChatFab';
 
-export default function LawyersPage() {
+function LawyersPage() {
   const { lawyers, isLoading, error } = useLawyers();
   const [selectedSpecialization, setSelectedSpecialization] = useState(null);
   const router = useRouter();
@@ -43,6 +43,7 @@ export default function LawyersPage() {
 
   return (
     <div className='container mx-auto px-4 py-8'>
+      <ChatFab />
       <h1 className='text-2xl font-bold mb-6'>Legal Assistance</h1>
 
       {/* Specialization filters */}
@@ -99,19 +100,24 @@ export default function LawyersPage() {
               <div className='flex-1'>
                 <div className='flex justify-between items-start mb-2'>
                   <h3 className='font-semibold text-lg'>{lawyer.name}</h3>
-                  <div className='flex items-center'>
-                    <Star className='h-4 w-4 text-yellow-400 mr-1' />
-                    <span className='text-sm'>{lawyer.rating}</span>
-                  </div>
+                  {!lawyer.isAI && lawyer.reviews?.length > 0 && (
+                    <div className='flex items-center gap-1'>
+                      <Star className='h-5 w-5 text-yellow-400 fill-yellow-400' />
+                      <span className='font-semibold'>{lawyer.rating}</span>
+                      <span className='text-gray-500'>
+                        ({lawyer.reviews.length})
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {lawyer.isAI ? (
-                  <p className='text-sm text-muted-foreground mb-4'>
+                  <p className='text-sm text-muted-foreground '>
                     Get instant legal guidance 24/7
                   </p>
                 ) : (
                   <>
-                    <div className='flex flex-wrap gap-2 mb-4'>
+                    <div className='flex flex-wrap gap-2 mb-2'>
                       {lawyer.specializations?.map((spec, index) => (
                         <Badge key={index} variant='secondary'>
                           {spec}
@@ -122,7 +128,7 @@ export default function LawyersPage() {
                       <div className='flex items-center text-sm text-muted-foreground'>
                         <MapPin className='h-4 w-4 mr-1' />
                         <span>
-                          {lawyer.state}, {lawyer.district}
+                          {lawyer.district}, {lawyer.state}
                         </span>
                       </div>
                       <div className='flex items-center text-sm text-muted-foreground'>
@@ -171,3 +177,5 @@ function LoadingSkeleton() {
     </div>
   );
 }
+
+export default LawyersPage;

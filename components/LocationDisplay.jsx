@@ -16,7 +16,7 @@ export default function LocationDisplay() {
         async (position) => {
           const { latitude, longitude } = position.coords;
           setLocation({ latitude, longitude });
-          console.log(latitude, longitude);
+          //   console.log(latitude, longitude);
           // Reverse geocoding using OpenStreetMap Nominatim API
           try {
             const response = await fetch(
@@ -25,7 +25,7 @@ export default function LocationDisplay() {
             const data = await response.json();
             setAddress(data.address.county);
 
-            console.log(data);
+            // console.log(data);
           } catch (error) {
             console.error('Error fetching address:', error);
             setError('Failed to get address');

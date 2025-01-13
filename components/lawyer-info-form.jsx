@@ -16,7 +16,7 @@ const SPECIALIZATIONS = [
   'Intellectual Property Law',
   'Labor Law',
   'Tax Law',
-  'Real Estate Law',
+  'Conveyancing Law',
   'Environmental Law',
 ];
 

@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { getStateName, getDistrictName } from '@/lib/location-data';
+import { getStates, getDistricts } from '@/lib/location-data';
 
 const LawyersContext = createContext();
 
@@ -50,8 +50,8 @@ export function LawyersProvider({ children }) {
           (spec) => spec.specializations.name
         ),
         experience: lawyer.experience,
-        state: getStateName(lawyer.state_id),
-        district: getDistrictName(lawyer.state_id, lawyer.district_id),
+        state: getStates(lawyer.state_id),
+        district: getDistricts(lawyer.state_id, lawyer.district_id),
         languages: lawyer.languages,
         rating: 4.5, // Default rating until we implement reviews
         reviews: [], // Placeholder until we implement reviews
@@ -71,6 +71,7 @@ export function LawyersProvider({ children }) {
       };
 
       setLawyers([aiLawyer, ...formattedLawyers]);
+      console.log(formattedLawyers[0]);
     } catch (err) {
       console.error('Error fetching lawyers:', err);
       setError(err.message);
