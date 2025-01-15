@@ -23,35 +23,26 @@ export default function ChatPage() {
 
         // First check if the logged-in user is a lawyer
         const { data: lawyerData, error: lawyerError } = await supabase
-          .from('lawyers')
+          .from('users')
           .select('*')
-          .eq('user_id', session.user.id)
+          .eq('auth_id', session.user.id)
+
           .single();
 
         if (lawyerError && lawyerError.code !== 'PGRST116') {
           console.error('Error checking lawyer status:', lawyerError);
         }
-
+        console.log(lawyerData);
         // Set isLawyer based on whether we found a lawyer record
-        const userIsLawyer = !!lawyerData;
-        setIsLawyer(userIsLawyer);
 
-        if (userIsLawyer) {
-          // If user is a lawyer, we need to fetch the client's details
-          const { data: userData, error: userError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', params.lawyerId)
-            .single();
+        const { data: chatData, error: chatError } = await supabase
+          .from('chats')
+          .select('*')
+          .or('user_id', session.user.id)
+          .or('receiver_id', session.user.id)
+          .single();
 
-          if (userError) throw userError;
-          setUser(userData);
-        } else {
-          // If user is a client, find the lawyer from context
-          const foundLawyer = lawyers.find((l) => l.id === params.lawyerId);
-          setLawyer(foundLawyer);
-        }
-
+        console.log(chatData);
         setIsLoading(false);
       } catch (error) {
         console.error('Error initializing chat page:', error);

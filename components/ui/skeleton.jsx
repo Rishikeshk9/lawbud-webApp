@@ -1,14 +1,17 @@
-'use client';
+import { cn } from "@/lib/utils"
 
-import { cn } from '@/lib/utils';
-
-function Skeleton({ className, ...props }) {
+function Skeleton({
+  className,
+  ...props
+}) {
   return (
-    <div
-      className={cn('animate-pulse rounded-md bg-muted', className)}
-      {...props}
-    />
+    (<div
+      className={cn(
+        "animate-pulse rounded-md bg-neutral-900/10 dark:bg-neutral-50/10",
+        className
+      )}
+      {...props} />)
   );
 }
 
-export { Skeleton };
+export { Skeleton }

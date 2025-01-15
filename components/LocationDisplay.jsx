@@ -10,34 +10,38 @@ export default function LocationDisplay() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Get current location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          const { latitude, longitude } = position.coords;
-          setLocation({ latitude, longitude });
-          //   console.log(latitude, longitude);
-          // Reverse geocoding using OpenStreetMap Nominatim API
-          try {
-            const response = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-            );
-            const data = await response.json();
-            setAddress(data.address.county);
+    try {
+      // Get current location
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            const { latitude, longitude } = position.coords;
+            setLocation({ latitude, longitude });
+            //   console.log(latitude, longitude);
+            // Reverse geocoding using OpenStreetMap Nominatim API
+            try {
+              const response = await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+              );
+              const data = await response.json();
+              setAddress(data.address.county);
 
-            // console.log(data);
-          } catch (error) {
-            console.error('Error fetching address:', error);
-            setError('Failed to get address');
+              // console.log(data);
+            } catch (error) {
+              console.error('Error fetching address:', error);
+              setError('Failed to get address');
+            }
+          },
+          (error) => {
+            console.error('Error getting location:', error);
+            setError('Unable to get your location');
           }
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          setError('Unable to get your location');
-        }
-      );
-    } else {
-      setError('Geolocation is not supported by your browser');
+        );
+      } else {
+        setError('Geolocation is not supported by your browser');
+      }
+    } catch (error) {
+      console.error('Error getting location:', error);
     }
   }, []);
 

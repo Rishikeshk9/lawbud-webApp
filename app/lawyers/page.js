@@ -81,7 +81,7 @@ function LawyersPage() {
             className='p-6 hover:shadow-lg transition-shadow cursor-pointer'
             onClick={() =>
               lawyer.isAI
-                ? router.push('/lawyers/ai-assistant')
+                ? router.push('/lawyers/0')
                 : router.push(`/lawyers/${lawyer.id}`)
             }
           >

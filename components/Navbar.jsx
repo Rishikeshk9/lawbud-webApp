@@ -18,7 +18,8 @@ export function Navbar() {
   if (
     pathname.includes('/login') ||
     pathname.includes('/register') ||
-    (pathname.includes('/lawyers/') && pathname.includes('/chat'))
+    (pathname.includes('/lawyers/') && pathname.includes('/chat')) ||
+    pathname.includes('/chats/')
   ) {
     return null;
   }
@@ -72,7 +73,6 @@ export function Navbar() {
       {/* Mobile: Search Bar (shown below navbar) */}
       <div className='border-b md:hidden px-4 pb-4 flex flex-row gap-2'>
         <LawyerSearch lawyers={lawyers} />
-        <LocationDisplay />
       </div>
     </nav>
   );

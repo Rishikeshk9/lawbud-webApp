@@ -14,6 +14,7 @@ import {
   Badge,
   MailWarningIcon,
   PhoneOff,
+  Scale,
 } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
 import { useLawyers } from '../contexts/LawyersContext';
@@ -93,7 +94,14 @@ export default function ProfilePage() {
             </Button>
           </div>
           <div className='flex-grow'>
-            <h1 className='text-2xl font-bold mb-4'>{profile.name}</h1>
+            <div className='flex items-center gap-2 justify-between w-max align-middle'>
+              <h1 className='text-2xl font-bold '>{profile.name}</h1>{' '}
+              {profile.role === 'lawyer' && (
+                <p className='bg-black text-white py-1 w-max px-1  text-xs rounded flex items-center gap-1'>
+                  <Scale className='h-4 w-4' /> Lawyer{' '}
+                </p>
+              )}
+            </div>
             <div className='space-y-2'>
               <div className='flex items-center text-gray-600'>
                 <Mail className='h-4 w-4 mr-2' />

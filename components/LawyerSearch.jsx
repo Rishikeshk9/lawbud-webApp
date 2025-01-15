@@ -12,7 +12,7 @@ import {
 import { StarIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-export function LawyerSearch({ lawyers }) {
+export function LawyerSearch({ lawyers = [] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const router = useRouter();
@@ -21,14 +21,22 @@ export function LawyerSearch({ lawyers }) {
   // Filter and sort lawyers based on search query
   const filteredLawyers = lawyers
     .filter((lawyer) => {
-      if (!searchQuery) return false;
-      const searchLower = searchQuery.toLowerCase().trim();
+      console.log(searchQuery.length, searchQuery);
+      if (searchQuery.length === 0) return false;
+      const searchLower = searchQuery?.toLowerCase().trim();
+
+      // Safely check lawyer properties
+      const name = lawyer?.name || '';
+      const specializations = lawyer?.specializations || [];
+
       return (
-        lawyer.name.toLowerCase().includes(searchLower) ||
-        lawyer.specialization.toLowerCase().includes(searchLower)
+        name.toLowerCase().includes(searchLower) ||
+        specializations.some((spec) =>
+          spec?.toLowerCase().includes(searchLower)
+        )
       );
     })
-    .sort((a, b) => b.rating - a.rating);
+    .sort((a, b) => (b?.rating || 0) - (a?.rating || 0));
 
   const handleSelect = (lawyerId) => {
     router.push(`/lawyers/${lawyerId}`);
@@ -38,12 +46,24 @@ export function LawyerSearch({ lawyers }) {
 
   const handleSearchChange = (value) => {
     setSearchQuery(value);
-    setIsOpen(value.length > 0);
+    setIsOpen(!!value);
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (commandRef.current && !commandRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   return (
     <div className='relative w-full max-w-md' ref={commandRef}>
-      <Command className='rounded-lg border shadow '>
+      <Command className='rounded-lg border shadow'>
         <CommandInput
           placeholder='Search lawyers by name or specialization...'
           value={searchQuery}
@@ -51,37 +71,42 @@ export function LawyerSearch({ lawyers }) {
           className='h-9'
         />
         {isOpen && searchQuery && (
-          <div className='absolute w-full bg-white dark:bg-gray-950 rounded-lg border mt-10 shadow-lg z-50'>
+          <CommandList className='absolute w-full bg-white dark:bg-gray-950 rounded-lg border mt-1 shadow-lg z-50'>
             {filteredLawyers.length === 0 ? (
-              <div className='p-4 text-sm text-gray-500'>No lawyers found.</div>
+              <CommandEmpty className='p-4 text-sm text-gray-500'>
+                No lawyers found.
+              </CommandEmpty>
             ) : (
-              <div className='max-h-[300px] overflow-y-auto '>
-                <p className='text-xs text-gray-500 p-2 border-b'>
-                  Top Results
-                </p>
-                <div>
+              filteredLawyers.length > 0 &&
+              isOpen && (
+                <CommandGroup className='max-h-[300px] overflow-y-auto'>
+                  <div className='text-xs text-gray-500 p-2 border-b'>
+                    Top Results
+                  </div>
                   {filteredLawyers.map((lawyer) => (
-                    <div
+                    <CommandItem
                       key={lawyer.id}
-                      onClick={() => handleSelect(lawyer.id)}
+                      onSelect={() => handleSelect(lawyer.id)}
                       className='p-3 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer'
                     >
-                      <div className='flex items-center justify-between w-full'>
-                        <span className='font-medium'>{lawyer.name}</span>
-                        <div className='flex items-center'>
-                          <StarIcon className='w-4 h-4 text-yellow-400 mr-1' />
-                          <span>{lawyer.rating}</span>
+                      <div className='flex flex-col w-full'>
+                        <div className='flex items-center justify-between w-full'>
+                          <span className='font-medium'>{lawyer.name}</span>
+                          <div className='flex items-center'>
+                            <StarIcon className='w-4 h-4 text-yellow-400 mr-1' />
+                            <span>{lawyer.rating}</span>
+                          </div>
                         </div>
+                        <span className='text-sm text-gray-500'>
+                          {lawyer.specializations?.join(', ')}
+                        </span>
                       </div>
-                      <span className='text-sm text-gray-500'>
-                        {lawyer.specialization}
-                      </span>
-                    </div>
+                    </CommandItem>
                   ))}
-                </div>
-              </div>
+                </CommandGroup>
+              )
             )}
-          </div>
+          </CommandList>
         )}
       </Command>
     </div>

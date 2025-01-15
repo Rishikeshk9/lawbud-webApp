@@ -18,8 +18,10 @@ import {
 import { useUser } from '@/app/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/app/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
-export default function LawyerDetailsPage() {
+function LawyerDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const { lawyers } = useLawyers();
@@ -27,6 +29,8 @@ export default function LawyerDetailsPage() {
   const { toast } = useToast();
   const [lawyer, setLawyer] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { session } = useAuth();
+  const [existingChatId, setExistingChatId] = useState(null);
 
   useEffect(() => {
     if (params.lawyerId && lawyers.length > 0) {
@@ -35,6 +39,34 @@ export default function LawyerDetailsPage() {
       setIsLoading(false);
     }
   }, [params.lawyerId, lawyers]);
+  const checkExistingChat = async () => {
+    if (!session?.user?.id || !lawyer?.auth_id) return;
+
+    try {
+      const { data: existingChat, error } = await supabase
+        .from('chats')
+        .select('*')
+        .or(`sender_id.eq.${session.user.id},receiver_id.eq.${lawyer.auth_id}`)
+        .order('created_at', { ascending: false }) // Sort by latest chat
+        .limit(1)
+        .maybeSingle();
+      if (error) {
+        console.error('Error checking existing chat:', error);
+        return;
+      }
+
+      if (existingChat) {
+        console.log('Existing chat found:', existingChat);
+        setExistingChatId(existingChat.id);
+        return existingChat.id;
+      }
+    } catch (error) {
+      console.error('Error in checkExistingChat:', error);
+    }
+  };
+  useEffect(() => {
+    checkExistingChat();
+  }, [session?.user?.id, lawyer?.auth_id]);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -56,8 +88,44 @@ export default function LawyerDetailsPage() {
     saveLawyer(lawyer.id);
   };
 
-  const handleChat = () => {
-    router.push(`/lawyers/${lawyer.id}/chat`);
+  const createNewChat = async () => {
+    try {
+      // Insert new chat record
+      const { data: newChat, error } = await supabase
+        .from('chats')
+        .insert([
+          {
+            sender_id: session.user.id,
+            receiver_id: lawyer.auth_id,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ])
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating new chat:', error);
+        return null;
+      }
+
+      console.log('New chat created:', newChat);
+      return newChat.id;
+    } catch (error) {
+      console.error('Error in createNewChat:', error);
+      return null;
+    }
+  };
+
+  const handleChat = async () => {
+    const chatId = await checkExistingChat();
+    console.log(chatId);
+    if (chatId) {
+      router.push(`/chats/${chatId}`);
+    } else {
+      const newChatId = await createNewChat();
+      router.push(`/chats/${newChatId}`);
+    }
   };
 
   return (
@@ -184,3 +252,5 @@ export default function LawyerDetailsPage() {
     </div>
   );
 }
+
+export default LawyerDetailsPage;

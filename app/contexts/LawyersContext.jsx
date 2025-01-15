@@ -25,13 +25,12 @@ export function LawyersProvider({ children }) {
           `
           *,
           users (
-            id,
             name,
-            email
+            email,
+            phone
           ),
           lawyer_specializations (
             specializations (
-              id,
               name
             )
           )
@@ -46,6 +45,8 @@ export function LawyersProvider({ children }) {
         id: lawyer.id,
         name: lawyer.users.name,
         email: lawyer.users.email,
+        phone: lawyer.users.phone,
+        auth_id: lawyer.auth_id,
         specializations: lawyer.lawyer_specializations.map(
           (spec) => spec.specializations.name
         ),
@@ -60,7 +61,7 @@ export function LawyersProvider({ children }) {
 
       // Add AI Lawyer card
       const aiLawyer = {
-        id: 'ai-assistant',
+        id: '0',
         name: 'AI Legal Assistant',
         specialization: 'All Legal Matters',
         experience: 'Available 24/7',
@@ -71,7 +72,7 @@ export function LawyersProvider({ children }) {
       };
 
       setLawyers([aiLawyer, ...formattedLawyers]);
-      console.log(formattedLawyers[0]);
+      console.log(formattedLawyers);
     } catch (err) {
       console.error('Error fetching lawyers:', err);
       setError(err.message);
