@@ -56,7 +56,7 @@ export function Navbar() {
 
           {/* Desktop: Search + Profile */}
           <div className='hidden md:flex md:flex-1 md:items-center md:justify-end md:gap-4'>
-            <LocationDisplay />
+            {/* <LocationDisplay /> */}
             <div className='flex-1 max-w-sm'>
               <LawyerSearch lawyers={lawyers} />
             </div>
