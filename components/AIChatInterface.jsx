@@ -7,7 +7,7 @@ import { Send, ArrowLeft, Bot, LogIn, Menu } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
@@ -19,7 +19,6 @@ export function AIChatInterface({ lawyer }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [chatId, setChatId] = useState(null);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
@@ -27,19 +26,20 @@ export function AIChatInterface({ lawyer }) {
   const messagesEndRef = useRef(null);
   const { toast } = useToast();
   const router = useRouter();
+  const params = useParams();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Modified useEffect to load latest chat
   useEffect(() => {
     const initialize = async () => {
       await checkAuthStatus();
-      const chats = await fetchChats();
+      // const chats = await fetchChats();
 
       // If there are existing chats, load the latest one
       if (chats && chats.length > 0) {
         const latestChat = chats[0]; // Since chats are ordered by created_at DESC
         setSelectedChat(latestChat);
-        setChatId(latestChat.id);
+
         await fetchMessages(latestChat.id);
       }
     };
@@ -117,6 +117,14 @@ export function AIChatInterface({ lawyer }) {
     }
   };
 
+  useEffect(() => {
+    if (params.chatId) {
+      setSelectedChat(params.chatId);
+      console.log('selectedChat', params.chatId);
+      fetchMessages(params.chatId);
+    }
+  }, [params.chatId]);
+
   // Initialize chat if none exists
   const initializeChat = async () => {
     try {
@@ -131,8 +139,8 @@ export function AIChatInterface({ lawyer }) {
 
       if (error) throw error;
 
-      setChatId(chat.id);
       setSelectedChat(chat);
+      router.push(`/chats/ai/${chat.id}`);
       return chat.id;
     } catch (error) {
       console.error('Error initializing chat:', error);
@@ -156,11 +164,11 @@ export function AIChatInterface({ lawyer }) {
     try {
       setIsLoading(true);
 
-      // Ensure we have a chat ID if user is logged in
-      let currentChatId = chatId;
-      if (!isAnonymous && !currentChatId) {
-        currentChatId = await initializeChat();
-      }
+      // // Ensure we have a chat ID if user is logged in
+      // let currentChatId = chatId;
+      // if (!isAnonymous && !currentChatId) {
+      //   currentChatId = await initializeChat();
+      // }
 
       // Add user message to UI
       const newUserMessage = {
@@ -171,8 +179,8 @@ export function AIChatInterface({ lawyer }) {
       setMessages((prev) => [...prev, newUserMessage]);
 
       // Save user message if logged in
-      if (!isAnonymous && currentChatId) {
-        await saveMessage(userMessage, 'user', currentChatId);
+      if (!isAnonymous && selectedChat) {
+        await saveMessage(userMessage, 'user', selectedChat);
       }
 
       // Add typing indicator
@@ -184,7 +192,7 @@ export function AIChatInterface({ lawyer }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: userMessage,
-          chatId: currentChatId,
+          chatId: selectedChat,
         }),
       });
 
@@ -204,14 +212,14 @@ export function AIChatInterface({ lawyer }) {
       );
 
       // Save AI response if logged in
-      if (!isAnonymous && currentChatId) {
-        await saveMessage(data.message, 'assistant', currentChatId);
+      if (!isAnonymous && selectedChat) {
+        await saveMessage(data.message, 'assistant', selectedChat);
       }
 
       // Update chats list if this is a new chat
-      if (!isAnonymous && !chatId) {
-        fetchChats();
-      }
+      // if (!isAnonymous && !chatId) {
+      //   fetchChats();
+      // }
     } catch (error) {
       console.error('Error:', error);
       setMessages((prev) => prev.filter((msg) => msg.role !== 'typing'));
@@ -254,7 +262,7 @@ export function AIChatInterface({ lawyer }) {
   // Modified createNewChat function
   const createNewChat = async () => {
     setSelectedChat(null);
-    setChatId(null);
+
     setMessages([]);
     if (!isAnonymous) {
       await initializeChat();
@@ -279,11 +287,11 @@ export function AIChatInterface({ lawyer }) {
   }, [messages]);
 
   return (
-    <div className='flex h-screen w-full'>
+    <div className='flex w-full h-screen'>
       {/* Mobile Header */}
-      <div className='fixed top-0 left-0 right-0 z-50 flex items-center gap-4 p-4 bg-black text-white border-b border-gray-800 md:hidden'>
+      <div className='fixed top-0 left-0 right-0 z-50 flex items-center gap-4 p-4 text-white bg-black border-b border-gray-800 md:hidden'>
         <Button variant='ghost' size='icon' onClick={() => router.back()}>
-          <ArrowLeft className='h-5 w-5' />
+          <ArrowLeft className='w-5 h-5' />
         </Button>
         {!isAnonymous && (
           <Button
@@ -292,16 +300,21 @@ export function AIChatInterface({ lawyer }) {
             onClick={() => setIsSidebarOpen(true)}
             className='md:hidden'
           >
-            <Menu className='h-5 w-5' />
+            <Menu className='w-5 h-5' />
           </Button>
         )}
-        <Avatar className='h-8 w-8'>
-          <AvatarFallback>
-            <Bot className='h-4 w-4' />
-          </AvatarFallback>
-        </Avatar>
-        <div className='flex-1'>
-          <h2 className='text-lg font-semibold'>AI Legal Assistant</h2>
+        <div
+          onClick={() => router.push('/lawyers/0')}
+          className='flex flex-row items-center gap-2'
+        >
+          <Avatar className='w-8 h-8'>
+            <AvatarFallback>
+              <Bot className='w-4 h-4' />
+            </AvatarFallback>
+          </Avatar>
+          <div className='flex-1'>
+            <h2 className='text-lg font-semibold'>AI Legal Assistant</h2>
+          </div>
         </div>
       </div>
 
@@ -309,38 +322,36 @@ export function AIChatInterface({ lawyer }) {
       {!isAnonymous && (
         <Sheet open={isSidebarOpen} onOpenChange={setIsSidebarOpen}>
           <SheetContent side='left' className='w-[300px] p-0 bg-black'>
-            <SheetHeader className='p-4 border-b border-gray-800'>
+            <SheetHeader className='flex flex-row items-center justify-between p-4 space-y-0 align-middle border-b border-gray-800'>
               <SheetTitle className='text-lg font-semibold text-white'>
                 Chat History
               </SheetTitle>
-              <div className='flex justify-between items-center'>
-                <VisuallyHidden>Chat navigation sidebar</VisuallyHidden>
-                <Button
-                  onClick={() => {
-                    createNewChat();
-                    setIsSidebarOpen(false);
-                  }}
-                  variant='outline'
-                  size='sm'
-                >
-                  New Chat
-                </Button>
-              </div>
+
+              <Button
+                onClick={() => {
+                  createNewChat();
+                  setIsSidebarOpen(false);
+                }}
+                variant='outline'
+              >
+                New Chat
+              </Button>
             </SheetHeader>
-            <ScrollArea className='flex-1 p-4'>
+            <ScrollArea className='flex-1 p-2'>
               {chats.map((chat) => (
                 <div
                   key={chat.id}
                   onClick={() => {
-                    setSelectedChat(chat);
-                    fetchMessages(chat.id);
-                    setIsSidebarOpen(false);
+                    //setIsSidebarOpen(false);
+                    router.push(`/chats/ai/${chat.id}`);
                   }}
-                  className={`p-3 rounded-lg mb-2 cursor-pointer hover:bg-gray-900 ${
-                    selectedChat?.id === chat.id ? 'bg-gray-900' : ''
+                  className={`p-3 rounded  mb-2 cursor-pointer   ${
+                    selectedChat === chat.id && params.chatId === chat.id
+                      ? 'bg-white   text-black'
+                      : 'text-white hover:bg-white/20'
                   }`}
                 >
-                  <div className='text-sm text-white'>
+                  <div className='text-sm '>
                     Chat - {new Date(chat.latest_message).toLocaleDateString()}
                   </div>
                   <div className='text-xs text-gray-400'>
@@ -355,8 +366,8 @@ export function AIChatInterface({ lawyer }) {
 
       {/* Desktop Sidebar */}
       {!isAnonymous && (
-        <div className='w-80 border-r border-gray-800 bg-black p-4 hidden md:flex flex-col'>
-          <div className='flex justify-between items-center mb-4'>
+        <div className='flex-col hidden p-4 bg-black border-r border-gray-800 w-80 md:flex'>
+          <div className='flex items-center justify-between mb-4'>
             <h3 className='text-lg font-semibold text-white'>Chats</h3>
             <Button onClick={createNewChat} variant='outline' size='sm'>
               New Chat
@@ -366,7 +377,10 @@ export function AIChatInterface({ lawyer }) {
             {chats.map((chat) => (
               <div
                 key={chat.id}
-                onClick={() => setSelectedChat(chat)}
+                onClick={() => {
+                  setSelectedChat(chat);
+                  router.push(`/chats/ai/${chat.id}`);
+                }}
                 className={`p-3 rounded-lg mb-2 cursor-pointer hover:bg-gray-900 ${
                   selectedChat?.id === chat.id ? 'bg-gray-900' : ''
                 }`}
@@ -384,15 +398,15 @@ export function AIChatInterface({ lawyer }) {
       )}
 
       {/* Chat Interface */}
-      <div className='flex-1 flex flex-col'>
+      <div className='flex flex-col flex-1'>
         {/* Desktop Header */}
-        <div className='fixed top-0 w-full z-40 items-center gap-4 p-4 bg-black text-white border-b border-gray-800 hidden md:flex'>
+        <div className='fixed top-0 z-40 items-center hidden w-full gap-4 p-4 text-white bg-black border-b border-gray-800 md:flex'>
           <Button variant='ghost' size='icon' onClick={() => router.back()}>
-            <ArrowLeft className='h-5 w-5' />
+            <ArrowLeft className='w-5 h-5' />
           </Button>
-          <Avatar className='h-8 w-8'>
+          <Avatar className='w-8 h-8'>
             <AvatarFallback>
-              <Bot className='h-4 w-4' />
+              <Bot className='w-4 h-4' />
             </AvatarFallback>
           </Avatar>
           <div className='flex-1'>
@@ -402,14 +416,14 @@ export function AIChatInterface({ lawyer }) {
 
         {/* Anonymous Alert */}
         {isAnonymous && (
-          <Alert className='mt-16 mx-4'>
-            <AlertDescription className='flex items-center justify-between flex-wrap gap-2'>
+          <Alert className='mx-4 mt-16'>
+            <AlertDescription className='flex flex-wrap items-center justify-between gap-2'>
               <span>
                 You are in anonymous mode. Your chat history won't be saved.
               </span>
               <Button asChild variant='outline' size='sm'>
                 <Link href='/login' className='flex items-center gap-2'>
-                  <LogIn className='h-4 w-4' />
+                  <LogIn className='w-4 h-4' />
                   <span className='hidden sm:inline'>Login to save chats</span>
                   <span className='sm:hidden'>Login</span>
                 </Link>
@@ -423,7 +437,7 @@ export function AIChatInterface({ lawyer }) {
           ref={scrollAreaRef}
           className='flex-1  py-1 px-4 w-full max-h-[calc(100vh-8rem)] mt-16'
         >
-          <div className='space-y-4 max-w-2xl mx-auto'>
+          <div className='max-w-2xl mx-auto space-y-4'>
             {messages.map((message, index) => (
               <div
                 key={index}
@@ -432,7 +446,7 @@ export function AIChatInterface({ lawyer }) {
                 }`}
               >
                 {message.role === 'typing' ? (
-                  <div className='flex items-center space-x-2 bg-muted rounded-lg p-3'>
+                  <div className='flex items-center p-3 space-x-2 rounded-lg bg-muted'>
                     <div
                       className='w-2 h-2 bg-gray-500 rounded-full animate-bounce'
                       style={{ animationDelay: '0ms' }}
@@ -487,7 +501,7 @@ export function AIChatInterface({ lawyer }) {
         {/* Input Form */}
         <form
           onSubmit={handleSendMessage}
-          className='p-4 bg-black border-t border-gray-800 fixed bottom-0 w-full z-40 flex justify-center'
+          className='fixed bottom-0 z-40 flex justify-center w-full p-4 bg-black border-t border-gray-800'
         >
           <div className='flex w-full max-w-2xl gap-2 px-4'>
             <Input
@@ -495,10 +509,10 @@ export function AIChatInterface({ lawyer }) {
               onChange={(e) => setInput(e.target.value)}
               placeholder='Type your message...'
               disabled={isLoading}
-              className='flex-1 text-white ring-0 focus:ring-0 focus:outline-none w-full'
+              className='flex-1 w-full text-white ring-0 focus:ring-0 focus:outline-none'
             />
             <Button type='submit' disabled={isLoading}>
-              <Send className='h-4 w-4' />
+              <Send className='w-4 h-4' />
             </Button>
           </div>
         </form>

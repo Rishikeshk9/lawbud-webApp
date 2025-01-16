@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getStates, getDistricts } from '@/lib/location-data';
+import { useAuth } from './AuthContext';
 
 const LawyersContext = createContext();
 
@@ -10,10 +11,34 @@ export function LawyersProvider({ children }) {
   const [lawyers, setLawyers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const { session } = useAuth();
+  const [savedLawyers, setSavedLawyers] = useState([]);
   useEffect(() => {
     fetchLawyers();
-  }, []);
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    fetchSavedLawyers();
+  }, [lawyers]);
+
+  const fetchSavedLawyers = async () => {
+    if (!session?.user?.id) return;
+    const { data: savedLawyers, error } = await supabase
+      .from('saved_lawyers')
+      .select('*')
+      .eq('user_id', session?.user?.id);
+
+    if (error) {
+      console.error('Error fetching saved lawyers:', error);
+      return;
+    }
+
+    setSavedLawyers(
+      lawyers.filter((lawyer) =>
+        savedLawyers.some((saved) => saved.lawyer_id === lawyer.id)
+      )
+    );
+  };
 
   const fetchLawyers = async () => {
     try {
@@ -72,7 +97,6 @@ export function LawyersProvider({ children }) {
       };
 
       setLawyers([aiLawyer, ...formattedLawyers]);
-      console.log(formattedLawyers);
     } catch (err) {
       console.error('Error fetching lawyers:', err);
       setError(err.message);
@@ -81,8 +105,51 @@ export function LawyersProvider({ children }) {
     }
   };
 
+  const saveLawyer = async (lawyerId) => {
+    const { data: existingLawyer } = await supabase
+      .from('saved_lawyers')
+      .select()
+      .eq('lawyer_id', lawyerId)
+      .eq('user_id', session?.user?.id)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingLawyer) {
+      const { error } = await supabase
+        .from('saved_lawyers')
+        .delete()
+        .eq('lawyer_id', lawyerId)
+        .eq('user_id', session?.user?.id);
+    } else {
+      const { error } = await supabase
+        .from('saved_lawyers')
+        .insert({ lawyer_id: lawyerId, user_id: session?.user?.id });
+    }
+  };
+
+  const isLawyerSaved = async (lawyerId) => {
+    const { data: savedLawyers, error } = await supabase
+      .from('saved_lawyers')
+      .select('*')
+      .eq('lawyer_id', lawyerId)
+      .eq('user_id', session?.user?.id)
+      .limit(1);
+    console.log(savedLawyers);
+    return savedLawyers.length > 0;
+  };
+
   return (
-    <LawyersContext.Provider value={{ lawyers, isLoading, error }}>
+    <LawyersContext.Provider
+      value={{
+        lawyers,
+        isLoading,
+        error,
+        saveLawyer,
+        isLawyerSaved,
+        savedLawyers,
+        fetchSavedLawyers,
+      }}
+    >
       {children}
     </LawyersContext.Provider>
   );

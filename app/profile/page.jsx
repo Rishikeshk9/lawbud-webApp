@@ -15,6 +15,7 @@ import {
   MailWarningIcon,
   PhoneOff,
   Scale,
+  Award,
 } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
 import { useLawyers } from '../contexts/LawyersContext';
@@ -22,11 +23,12 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Warning } from 'postcss';
+import { Badge as BadgeUI } from '@/components/ui/badge';
 import LocationDisplay from '@/components/LocationDisplay';
 
 export default function ProfilePage() {
   const { user } = useUser();
-  const { lawyers } = useLawyers();
+  const { lawyers, savedLawyers, fetchSavedLawyers } = useLawyers();
   const router = useRouter();
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -58,6 +60,14 @@ export default function ProfilePage() {
     loadProfile();
   }, []);
 
+  useEffect(() => {
+    fetchSavedLawyers();
+  }, [profile]);
+
+  useEffect(() => {
+    console.log(savedLawyers);
+  }, [savedLawyers]);
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -66,17 +76,12 @@ export default function ProfilePage() {
     return <div>No profile found</div>;
   }
 
-  // Get saved lawyers with full details
-  const savedLawyers = profile.saved_lawyers
-    ? lawyers.filter((lawyer) => profile.saved_lawyers.includes(lawyer.id))
-    : [];
-
   return (
-    <div className='container mx-auto px-4 py-8'>
+    <div className='container px-4 py-8 mx-auto'>
       <Card className='p-6 mb-6'>
-        <div className='flex flex-col md:flex-row items-start gap-6'>
+        <div className='flex flex-col items-start gap-6 md:flex-row'>
           <div className='relative'>
-            <Avatar className='h-24 w-24'>
+            <Avatar className='w-24 h-24'>
               <AvatarImage src={profile.avatar_url} alt={profile.name} />
               <AvatarFallback>
                 {profile.name
@@ -90,46 +95,46 @@ export default function ProfilePage() {
               variant='outline'
               className='absolute bottom-0 right-0 rounded-full'
             >
-              <Edit2 className='h-4 w-4' />
+              <Edit2 className='w-4 h-4' />
             </Button>
           </div>
           <div className='flex-grow'>
-            <div className='flex items-center gap-2 justify-between w-max align-middle'>
+            <div className='flex items-center justify-between gap-2 align-middle w-max'>
               <h1 className='text-2xl font-bold '>{profile.name}</h1>{' '}
               {profile.role === 'lawyer' && (
-                <p className='bg-black text-white py-1 w-max px-1  text-xs rounded flex items-center gap-1'>
-                  <Scale className='h-4 w-4' /> Lawyer{' '}
+                <p className='flex items-center gap-1 px-1 py-1 text-xs text-white bg-black rounded w-max'>
+                  <Scale className='w-4 h-4' /> Lawyer{' '}
                 </p>
               )}
             </div>
             <div className='space-y-2'>
               <div className='flex items-center text-gray-600'>
-                <Mail className='h-4 w-4 mr-2' />
+                <Mail className='w-4 h-4 mr-2' />
                 {profile.email}
                 {userMetadata.email_verified ? (
                   <>
-                    <Verified className='h-4 w-4 ml-2 text-green-500 mr-1' />
+                    <Verified className='w-4 h-4 ml-2 mr-1 text-green-500' />
                     <p className='text-xs text-green-500'>Verified</p>
                   </>
                 ) : (
                   <>
-                    <MailWarningIcon className='h-4 w-4 ml-2 text-red-500 mr-1  ' />
+                    <MailWarningIcon className='w-4 h-4 ml-2 mr-1 text-red-500 ' />
                     <p className='text-xs text-red-500'>Unverified</p>
                   </>
                 )}
               </div>
               {profile.phone && (
                 <div className='flex items-center text-gray-600'>
-                  <Phone className='h-4 w-4 mr-2' />
+                  <Phone className='w-4 h-4 mr-2' />
                   {profile.phone}
                   {userMetadata.phone_verified ? (
                     <>
-                      <Verified className='h-4 w-4 ml-2 text-green-500 mr-1' />
+                      <Verified className='w-4 h-4 ml-2 mr-1 text-green-500' />
                       <p className='text-xs text-green-500'>Verified</p>
                     </>
                   ) : (
                     <>
-                      <PhoneOff className='h-4 w-4 ml-2 text-red-500 mr-1' />
+                      <PhoneOff className='w-4 h-4 ml-2 mr-1 text-red-500' />
                       <p className='text-xs text-red-500'>Unverified</p>
                     </>
                   )}
@@ -137,7 +142,7 @@ export default function ProfilePage() {
               )}
               {profile.location && (
                 <div className='flex items-center text-gray-600'>
-                  <MapPin className='h-4 w-4 mr-2' />
+                  <MapPin className='w-4 h-4 mr-2' />
                   {profile.location}
                 </div>
               )}
@@ -152,27 +157,76 @@ export default function ProfilePage() {
         </TabsList>
 
         <TabsContent value='saved'>
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-            {savedLawyers.length > 0 ? (
-              savedLawyers.map((lawyer) => (
-                <div
+          <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+            {savedLawyers?.length > 0 ? (
+              savedLawyers?.map((lawyer) => (
+                <Card
                   key={lawyer.id}
-                  className='border rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer'
-                  onClick={() => router.push(`/lawyers/${lawyer.id}`)}
+                  className='p-6 transition-shadow cursor-pointer hover:shadow-lg'
+                  onClick={() =>
+                    lawyer.isAI
+                      ? router.push('/lawyers/0')
+                      : router.push(`/lawyers/${lawyer.id}`)
+                  }
                 >
-                  <div className='flex items-center justify-between'>
-                    <h2 className='text-xl font-semibold'>{lawyer.name}</h2>
-                    <div className='flex items-center mt-2 align-middle'>
-                      <StarIcon className='w-4 h-4 text-yellow-400 mr-1' />
-                      <span className='font-semibold'>{lawyer.rating}</span>
-                      <span className='text-gray-500 ml-1 text-xs'>
-                        ({lawyer.reviews.length})
-                      </span>
+                  <div className='flex items-start gap-4'>
+                    <Avatar
+                      className={`h-12 w-12 ${lawyer.isAI ? 'bg-primary' : ''}`}
+                    >
+                      <AvatarFallback>
+                        {lawyer.isAI ? (
+                          <Bot className='w-6 h-6' />
+                        ) : (
+                          lawyer.name.charAt(0)
+                        )}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className='flex-1'>
+                      <div className='flex items-start justify-between mb-2'>
+                        <h3 className='text-lg font-semibold'>{lawyer.name}</h3>
+                        {!lawyer.isAI && lawyer.reviews?.length > 0 && (
+                          <div className='flex items-center gap-1'>
+                            <Star className='w-5 h-5 text-yellow-400 fill-yellow-400' />
+                            <span className='font-semibold'>
+                              {lawyer.rating}
+                            </span>
+                            <span className='text-gray-500'>
+                              ({lawyer.reviews.length})
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {lawyer.isAI ? (
+                        <p className='text-sm text-muted-foreground '>
+                          Get instant legal guidance 24/7
+                        </p>
+                      ) : (
+                        <>
+                          <div className='flex flex-wrap gap-2 mb-2'>
+                            {lawyer.specializations?.map((spec, index) => (
+                              <BadgeUI key={index} variant='secondary'>
+                                {spec}
+                              </BadgeUI>
+                            ))}
+                          </div>
+                          <div className='space-y-2'>
+                            <div className='flex items-center text-sm text-muted-foreground'>
+                              <MapPin className='w-4 h-4 mr-1' />
+                              <span>
+                                {lawyer.district}, {lawyer.state}
+                              </span>
+                            </div>
+                            <div className='flex items-center text-sm text-muted-foreground'>
+                              <Award className='w-4 h-4 mr-1' />
+                              <span>{lawyer.experience} years experience</span>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
-                  <p className='text-gray-600'>{lawyer.specialization}</p>
-                  <p className='text-gray-500'>{lawyer.location}</p>
-                </div>
+                </Card>
               ))
             ) : (
               <div className='text-center text-gray-500'>Coming Soon!</div>

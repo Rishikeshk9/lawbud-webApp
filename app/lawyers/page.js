@@ -42,16 +42,15 @@ function LawyersPage() {
     : lawyers;
 
   return (
-    <div className='container mx-auto px-4 py-8'>
+    <div className='container px-4 py-4 mx-auto'>
       <ChatFab />
-      <h1 className='text-2xl font-bold mb-6'>Legal Assistance</h1>
 
       {/* Specialization filters */}
-      <div className='mb-6'>
+      <div className='mb-4'>
         <div className='flex flex-wrap gap-2'>
           <Badge
             variant={selectedSpecialization === null ? 'default' : 'outline'}
-            className='cursor-pointer  '
+            className='cursor-pointer '
             onClick={() => setSelectedSpecialization(null)}
           >
             All
@@ -64,7 +63,7 @@ function LawyersPage() {
                   ? 'default'
                   : 'outline'
               }
-              className='cursor-pointer  '
+              className='cursor-pointer '
               onClick={() => setSelectedSpecialization(specialization)}
             >
               {specialization}
@@ -74,11 +73,11 @@ function LawyersPage() {
       </div>
 
       {/* Lawyers grid */}
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+      <div className='grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3'>
         {filteredLawyers.map((lawyer) => (
           <Card
             key={lawyer.id}
-            className='p-6 hover:shadow-lg transition-shadow cursor-pointer'
+            className='p-6 transition-shadow cursor-pointer hover:shadow-lg'
             onClick={() =>
               lawyer.isAI
                 ? router.push('/lawyers/0')
@@ -91,18 +90,18 @@ function LawyersPage() {
               >
                 <AvatarFallback>
                   {lawyer.isAI ? (
-                    <Bot className='h-6 w-6' />
+                    <Bot className='w-6 h-6' />
                   ) : (
                     lawyer.name.charAt(0)
                   )}
                 </AvatarFallback>
               </Avatar>
               <div className='flex-1'>
-                <div className='flex justify-between items-start mb-2'>
-                  <h3 className='font-semibold text-lg'>{lawyer.name}</h3>
+                <div className='flex items-start justify-between mb-2'>
+                  <h3 className='text-lg font-semibold'>{lawyer.name}</h3>
                   {!lawyer.isAI && lawyer.reviews?.length > 0 && (
                     <div className='flex items-center gap-1'>
-                      <Star className='h-5 w-5 text-yellow-400 fill-yellow-400' />
+                      <Star className='w-5 h-5 text-yellow-400 fill-yellow-400' />
                       <span className='font-semibold'>{lawyer.rating}</span>
                       <span className='text-gray-500'>
                         ({lawyer.reviews.length})
@@ -126,13 +125,13 @@ function LawyersPage() {
                     </div>
                     <div className='space-y-2'>
                       <div className='flex items-center text-sm text-muted-foreground'>
-                        <MapPin className='h-4 w-4 mr-1' />
+                        <MapPin className='w-4 h-4 mr-1' />
                         <span>
                           {lawyer.district}, {lawyer.state}
                         </span>
                       </div>
                       <div className='flex items-center text-sm text-muted-foreground'>
-                        <Award className='h-4 w-4 mr-1' />
+                        <Award className='w-4 h-4 mr-1' />
                         <span>{lawyer.experience} years experience</span>
                       </div>
                     </div>
@@ -149,26 +148,26 @@ function LawyersPage() {
 
 function LoadingSkeleton() {
   return (
-    <div className='container mx-auto px-4 py-8'>
-      <Skeleton className='h-8 w-48 mb-6' />
+    <div className='container px-4 py-8 mx-auto'>
+      <Skeleton className='w-48 h-8 mb-6' />
       <div className='flex gap-2 mb-6'>
         {[...Array(4)].map((_, i) => (
-          <Skeleton key={i} className='h-8 w-20' />
+          <Skeleton key={i} className='w-20 h-8' />
         ))}
       </div>
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
+      <div className='grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3'>
         {[...Array(6)].map((_, i) => (
           <Card key={i} className='p-6'>
             <div className='flex items-start gap-4'>
-              <Skeleton className='h-12 w-12 rounded-full' />
+              <Skeleton className='w-12 h-12 rounded-full' />
               <div className='flex-1'>
-                <Skeleton className='h-6 w-3/4 mb-2' />
+                <Skeleton className='w-3/4 h-6 mb-2' />
                 <div className='flex gap-2 mb-4'>
-                  <Skeleton className='h-5 w-16' />
-                  <Skeleton className='h-5 w-16' />
+                  <Skeleton className='w-16 h-5' />
+                  <Skeleton className='w-16 h-5' />
                 </div>
-                <Skeleton className='h-4 w-full mb-2' />
-                <Skeleton className='h-4 w-2/3' />
+                <Skeleton className='w-full h-4 mb-2' />
+                <Skeleton className='w-2/3 h-4' />
               </div>
             </div>
           </Card>

@@ -19,9 +19,8 @@ export function LawyerSearch({ lawyers = [] }) {
   const commandRef = useRef(null);
 
   // Filter and sort lawyers based on search query
-  const filteredLawyers = lawyers
+  const filteredLawyers = (lawyers ?? [])
     .filter((lawyer) => {
-      console.log(searchQuery.length, searchQuery);
       if (searchQuery.length === 0) return false;
       const searchLower = searchQuery?.toLowerCase().trim();
 
@@ -63,7 +62,7 @@ export function LawyerSearch({ lawyers = [] }) {
 
   return (
     <div className='relative w-full max-w-md' ref={commandRef}>
-      <Command className='rounded-lg border shadow'>
+      <Command className='border rounded-lg shadow'>
         <CommandInput
           placeholder='Search lawyers by name or specialization...'
           value={searchQuery}
@@ -71,7 +70,7 @@ export function LawyerSearch({ lawyers = [] }) {
           className='h-9'
         />
         {isOpen && searchQuery && (
-          <CommandList className='absolute w-full bg-white dark:bg-gray-950 rounded-lg border mt-1 shadow-lg z-50'>
+          <CommandList className='absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg dark:bg-gray-950'>
             {filteredLawyers.length === 0 ? (
               <CommandEmpty className='p-4 text-sm text-gray-500'>
                 No lawyers found.
@@ -80,25 +79,26 @@ export function LawyerSearch({ lawyers = [] }) {
               filteredLawyers.length > 0 &&
               isOpen && (
                 <CommandGroup className='max-h-[300px] overflow-y-auto'>
-                  <div className='text-xs text-gray-500 p-2 border-b'>
+                  <div className='p-2 text-xs text-gray-500 border-b'>
                     Top Results
                   </div>
-                  {filteredLawyers.map((lawyer) => (
+                  {(filteredLawyers ?? []).map((lawyer) => (
                     <CommandItem
                       key={lawyer.id}
                       onSelect={() => handleSelect(lawyer.id)}
-                      className='p-3 hover:bg-gray-100 dark:hover:bg-gray-800 cursor-pointer'
                     >
                       <div className='flex flex-col w-full'>
                         <div className='flex items-center justify-between w-full'>
-                          <span className='font-medium'>{lawyer.name}</span>
+                          <span className='font-medium'>
+                            {lawyer?.name ?? 'Unknown'}
+                          </span>
                           <div className='flex items-center'>
-                            <StarIcon className='w-4 h-4 text-yellow-400 mr-1' />
-                            <span>{lawyer.rating}</span>
+                            <StarIcon className='w-4 h-4 mr-1 text-yellow-400' />
+                            <span>{lawyer?.rating ?? 0}</span>
                           </div>
                         </div>
                         <span className='text-sm text-gray-500'>
-                          {lawyer.specializations?.join(', ')}
+                          {(lawyer?.specializations ?? []).join(', ')}
                         </span>
                       </div>
                     </CommandItem>

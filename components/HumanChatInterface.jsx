@@ -64,6 +64,25 @@ export function HumanChatInterface({ chat, sender, receiver }) {
             )
             .subscribe();
         }
+
+        let otherUser;
+        if (receiver.role === 'lawyer') {
+          const { data } = await supabase
+            .from('lawyers')
+            .select('*')
+            .eq('user_id', receiver.id)
+            .single();
+          otherUser = data;
+        } else {
+          const { data } = await supabase
+            .from('users')
+            .select('*')
+            .eq('auth_id', receiver.id)
+            .single();
+          otherUser = data;
+        }
+        console.log(otherUser);
+        setOtherParty(otherUser);
       } catch (error) {
         console.error('Error in initialization:', error);
       }
@@ -104,7 +123,6 @@ export function HumanChatInterface({ chat, sender, receiver }) {
   };
 
   const handleSendMessage = async (e) => {
-    console.log(input);
     e.preventDefault(); // Prevent form submission default behavior
 
     // Return early if:
@@ -141,7 +159,7 @@ export function HumanChatInterface({ chat, sender, receiver }) {
       if (updateError) throw updateError;
 
       // Fetch latest messages to ensure consistency
-      await fetchMessages(chat.id);
+      //await fetchMessages(chat.id);
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
@@ -160,13 +178,19 @@ export function HumanChatInterface({ chat, sender, receiver }) {
     <div className='flex flex-col h-screen'>
       {/* Header */}
       <div
-        onClick={() => router.push(`/lawyers/${receiver.id}`)}
-        className='h-18 sticky top-0 w-full z-40 flex items-center gap-4 p-4 bg-black text-white border-b border-gray-800'
+        onClick={() =>
+          router.push(
+            otherParty.role === 'user'
+              ? `/users/${otherParty.id}`
+              : `/lawyers/${otherParty.id}`
+          )
+        }
+        className='sticky top-0 z-40 flex items-center w-full gap-4 p-4 text-white bg-black border-b border-gray-800 h-18'
       >
         <Button variant='ghost' size='icon' onClick={() => router.back()}>
-          <ArrowLeft className='h-5 w-5' />
+          <ArrowLeft className='w-5 h-5' />
         </Button>
-        <Avatar className='h-8 w-8'>
+        <Avatar className='w-8 h-8'>
           <AvatarFallback>{receiver?.name?.[0]}</AvatarFallback>
         </Avatar>
         <div className='flex-1'>
@@ -181,7 +205,7 @@ export function HumanChatInterface({ chat, sender, receiver }) {
         ref={scrollAreaRef}
         className='flex-1 py-1 px-4 w-full  max-h-[calc(100vh-8rem)]'
       >
-        <div className='space-y-2 max-w-2xl mx-auto'>
+        <div className='max-w-2xl mx-auto space-y-2'>
           {messages?.map((message, index) => (
             <div
               key={index}
@@ -224,7 +248,7 @@ export function HumanChatInterface({ chat, sender, receiver }) {
       {/* Input Form */}
       <form
         onSubmit={handleSendMessage}
-        className='p-2 bg-black border-t border-gray-800 fixed bottom-0 w-full z-40 flex justify-center'
+        className='fixed bottom-0 z-40 flex justify-center w-full p-2 bg-black border-t border-gray-800'
       >
         <div className='flex w-full max-w-2xl gap-2 px-2'>
           <Input
@@ -234,12 +258,8 @@ export function HumanChatInterface({ chat, sender, receiver }) {
             disabled={isLoading}
             className='flex-1 text-white border border-white/10 placeholder:text-white/50'
           />
-          <Button
-            className='aspect-square  '
-            type='submit'
-            disabled={isLoading}
-          >
-            <Send className='h-8 w-8' />
+          <Button className='aspect-square ' type='submit' disabled={isLoading}>
+            <Send className='w-8 h-8' />
           </Button>
         </div>
       </form>

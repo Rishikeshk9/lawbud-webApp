@@ -105,8 +105,8 @@ export default function ChatsPage() {
   }
 
   return (
-    <div className='container mx-auto p-2 h-max '>
-      <div className='space-y-4 max-w-2xl mx-auto h-max  '>
+    <div className='container p-0 mx-auto h-max '>
+      <div className='max-w-2xl mx-auto h-max '>
         {chats.length === 0 ? (
           <Card className='p-6 text-center text-muted-foreground'>
             No conversations yet
@@ -120,62 +120,65 @@ export default function ChatsPage() {
             const otherUser = participants[otherUserId];
 
             return (
-              <Card
-                key={chat.id}
-                className='p-4 hover:shadow-lg transition-shadow cursor-pointer'
-                onClick={() => router.push(`/chats/${chat.id}`)}
-              >
-                <div className='flex items-center gap-4'>
-                  <Avatar>
-                    <AvatarFallback>
-                      {otherUser?.name?.[0] || '?'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className='flex-1 min-w-0'>
-                    <div className='flex justify-between items-start'>
-                      <h3 className='font-semibold truncate text-black'>
-                        {otherUser?.name || (
+              lastMessages[chat.id] &&
+              lastMessages[chat.id].length > 0 && (
+                <Card
+                  key={chat.id}
+                  className='p-4 transition-shadow border-b rounded-none cursor-pointer hover:shadow '
+                  onClick={() => router.push(`/chats/${chat.id}`)}
+                >
+                  <div className='flex items-center gap-4'>
+                    <Avatar>
+                      <AvatarFallback>
+                        {otherUser?.name?.[0] || 'LB'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className='flex-1 min-w-0'>
+                      <div className='flex items-start justify-between'>
+                        <h3 className='font-semibold text-black truncate'>
+                          {otherUser?.name || (
+                            <Skeleton className='w-[100px] h-[10px] rounded' />
+                          )}
+                        </h3>
+                        <span className='flex-shrink-0 ml-2 text-sm text-muted-foreground'>
+                          {(() => {
+                            const date = new Date(chat.updated_at);
+                            const now = new Date();
+                            const diffInHours = (now - date) / (1000 * 60 * 60);
+
+                            if (diffInHours < 24) {
+                              return date.toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true,
+                              });
+                            } else if (diffInHours < 48) {
+                              return 'Yesterday';
+                            } else if (diffInHours < 168) {
+                              // 7 days
+                              return date.toLocaleDateString([], {
+                                weekday: 'long',
+                              });
+                            } else {
+                              return date.toLocaleDateString();
+                            }
+                          })()}
+                        </span>
+                      </div>
+                      <div className='text-sm text-black truncate'>
+                        {lastMessages[chat.id] || (
                           <Skeleton className='w-[100px] h-[10px] rounded' />
                         )}
-                      </h3>
-                      <span className='text-sm text-muted-foreground flex-shrink-0 ml-2'>
-                        {(() => {
-                          const date = new Date(chat.updated_at);
-                          const now = new Date();
-                          const diffInHours = (now - date) / (1000 * 60 * 60);
-
-                          if (diffInHours < 24) {
-                            return date.toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              hour12: true,
-                            });
-                          } else if (diffInHours < 48) {
-                            return 'Yesterday';
-                          } else if (diffInHours < 168) {
-                            // 7 days
-                            return date.toLocaleDateString([], {
-                              weekday: 'long',
-                            });
-                          } else {
-                            return date.toLocaleDateString();
-                          }
-                        })()}
-                      </span>
+                      </div>
                     </div>
-                    <div className='text-sm text-black truncate'>
-                      {lastMessages[chat.id] || (
-                        <Skeleton className='w-[100px] h-[10px] rounded' />
-                      )}
-                    </div>
+                    {chat.unreadCount > 0 && (
+                      <div className='px-2 py-1 text-xs rounded-full bg-primary text-primary-foreground'>
+                        {chat.unreadCount}
+                      </div>
+                    )}
                   </div>
-                  {chat.unreadCount > 0 && (
-                    <div className='bg-primary text-primary-foreground rounded-full px-2 py-1 text-xs'>
-                      {chat.unreadCount}
-                    </div>
-                  )}
-                </div>
-              </Card>
+                </Card>
+              )
             );
           })
         )}
@@ -186,16 +189,16 @@ export default function ChatsPage() {
 
 function LoadingSkeleton() {
   return (
-    <div className='container mx-auto px-4 py-8'>
-      <Skeleton className='h-8 w-48 mb-6' />
-      <div className='space-y-4 max-w-2xl mx-auto'>
+    <div className='container px-4 py-8 mx-auto'>
+      <Skeleton className='w-48 h-8 mb-6' />
+      <div className='max-w-2xl mx-auto space-y-4'>
         {[...Array(5)].map((_, i) => (
           <Card key={i} className='p-4'>
             <div className='flex items-center gap-4'>
-              <Skeleton className='h-12 w-12 rounded-full' />
+              <Skeleton className='w-12 h-12 rounded-full' />
               <div className='flex-1'>
-                <Skeleton className='h-5 w-32 mb-2' />
-                <Skeleton className='h-4 w-full' />
+                <Skeleton className='w-32 h-5 mb-2' />
+                <Skeleton className='w-full h-4' />
               </div>
             </div>
           </Card>

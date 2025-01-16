@@ -3,11 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useLawyers } from '@/app/contexts/LawyersContext';
-import { HumanChatInterface } from '@/components/HumanChatInterface';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { AIChatInterface } from '@/components/AIChatInterface';
 
 export default function ChatPage() {
   const params = useParams();
@@ -24,27 +24,24 @@ export default function ChatPage() {
       try {
         if (!session?.user?.id) return;
 
+        setIsAI(true);
+
         const { data: chatData, error: chatError } = await supabase
-          .from('chats')
+          .from('ai_chats')
           .select('*')
           .eq('id', params.chatId)
-          .single();
+          .order('created_at', { ascending: false })
+          .maybeSingle();
 
         if (chatError && chatError.code !== 'PGRST116') {
           console.error('Error checking chat status:', chatError);
         }
         setChat(chatData);
 
-        // Fetch receiver based on who is not the current user
-        const receiverId =
-          chatData.sender_id === session.user.id
-            ? chatData.receiver_id
-            : chatData.sender_id;
-
         const { data: receiverData, error: receiverError } = await supabase
           .from('users')
           .select('*')
-          .eq('auth_id', receiverId)
+          .eq('role', 'ai')
           .single();
 
         if (receiverError && receiverError.code !== 'PGRST116') {
@@ -86,9 +83,12 @@ export default function ChatPage() {
     );
   }
 
+  if (receiver.isAI) {
+    return <div>AI chat interface</div>; // TODO: add AI chat interface
+  }
   if (!chat) {
     return <div>Chat not found</div>;
   }
 
-  return <HumanChatInterface chat={chat} sender={sender} receiver={receiver} />;
+  return <AIChatInterface chat={chat} sender={sender} receiver={receiver} />;
 }
