@@ -52,7 +52,8 @@ export function LawyersProvider({ children }) {
           users (
             name,
             email,
-            phone
+            phone,
+            avatar_url
           ),
           lawyer_specializations (
             specializations (
@@ -68,6 +69,7 @@ export function LawyersProvider({ children }) {
       // Format the lawyers data
       const formattedLawyers = lawyersData.map((lawyer) => ({
         id: lawyer.id,
+        avatar_url: lawyer.users.avatar_url,
         name: lawyer.users.name,
         email: lawyer.users.email,
         phone: lawyer.users.phone,

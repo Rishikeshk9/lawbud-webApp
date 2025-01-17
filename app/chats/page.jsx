@@ -8,12 +8,15 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/app/contexts/AuthContext';
+import { Badge } from '@/components/ui/badge';
+import Image from 'next/image';
 
 export default function ChatsPage() {
   const [chats, setChats] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [lastMessages, setLastMessages] = useState({});
   const [participants, setParticipants] = useState({}); // Store participant details
+  const [unreadCounts, setUnreadCounts] = useState({});
   const router = useRouter();
   const { toast } = useToast();
   const { session } = useAuth();
@@ -21,27 +24,124 @@ export default function ChatsPage() {
   useEffect(() => {
     if (session?.user?.id) {
       fetchChats();
+
+      // Subscribe to new messages
+      const subscription = supabase
+        .channel('messages')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+          },
+          (payload) => {
+            const newMessage = payload.new;
+            // Update unread count if message is for current user and not read
+            if (
+              newMessage.receiver_id === session.user.id &&
+              !newMessage.read
+            ) {
+              setUnreadCounts((prev) => ({
+                ...prev,
+                [newMessage.chat_id]: (prev[newMessage.chat_id] || 0) + 1,
+              }));
+            }
+            // Update last message for the relevant chat
+            setLastMessages((prev) => ({
+              ...prev,
+              [newMessage.chat_id]: newMessage.content,
+            }));
+
+            // Update chat's updated_at timestamp and resort chats
+            setChats((prevChats) => {
+              const updatedChats = prevChats.map((chat) =>
+                chat.id === newMessage.chat_id
+                  ? { ...chat, updated_at: newMessage.created_at }
+                  : chat
+              );
+              return [...updatedChats].sort(
+                (a, b) => new Date(b.updated_at) - new Date(a.updated_at)
+              );
+            });
+          }
+        )
+        .subscribe();
+
+      // Subscribe to message updates (for read status)
+      const readSubscription = supabase
+        .channel('message_updates')
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'messages',
+          },
+          (payload) => {
+            const updatedMessage = payload.new;
+            if (updatedMessage.read) {
+              // Decrement unread count when a message is marked as read
+              setUnreadCounts((prev) => ({
+                ...prev,
+                [updatedMessage.chat_id]: Math.max(
+                  (prev[updatedMessage.chat_id] || 0) - 1,
+                  0
+                ),
+              }));
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        subscription.unsubscribe();
+        readSubscription.unsubscribe();
+      };
     }
   }, [session?.user?.id]);
 
-  const fetchChats = () => {
-    supabase
+  const fetchUnreadCount = async (chatId) => {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('id')
+      .eq('chat_id', chatId)
+      .eq('receiver_id', session.user.id) // Changed from sender_id to receiver_id
+      .eq('read', false);
+
+    if (!error) {
+      setUnreadCounts((prev) => ({
+        ...prev,
+        [chatId]: data.length,
+      }));
+    }
+  };
+
+  const fetchChats = async () => {
+    const { data: chatData, error: chatError } = await supabase
       .from('chats')
       .select('*')
       .or(`sender_id.eq.${session.user.id},receiver_id.eq.${session.user.id}`)
-      .order('updated_at', { ascending: false })
-      .then(({ data: chatData, error: chatError }) => {
-        if (chatError) {
-          console.error('Error fetching chats:', chatError);
-          return;
-        }
-        setChats(chatData);
-        chatData.forEach((chat) => {
-          fetchMessage(chat.id);
-          fetchParticipantDetails(chat.sender_id, chat.receiver_id);
-        });
-        setIsLoading(false);
-      });
+      .order('updated_at', { ascending: false });
+
+    if (chatError) {
+      console.error('Error fetching chats:', chatError);
+      return;
+    }
+
+    const sortedChats = [...chatData].sort(
+      (a, b) => new Date(b.updated_at) - new Date(a.updated_at)
+    );
+    setChats(sortedChats);
+
+    // Fetch unread counts for each chat
+    sortedChats.forEach((chat) => {
+      fetchUnreadCount(chat.id);
+      fetchMessage(chat.id);
+      fetchParticipantDetails(chat.sender_id, chat.receiver_id);
+    });
+
+    setIsLoading(false);
   };
 
   const fetchMessage = (chatId) => {
@@ -106,7 +206,7 @@ export default function ChatsPage() {
 
   return (
     <div className='container p-0 mx-auto h-max '>
-      <div className='max-w-2xl mx-auto h-max '>
+      <div className='max-w-2xl p-1 mx-auto h-max'>
         {chats.length === 0 ? (
           <Card className='p-6 text-center text-muted-foreground'>
             No conversations yet
@@ -118,21 +218,42 @@ export default function ChatsPage() {
                 ? chat.receiver_id
                 : chat.sender_id;
             const otherUser = participants[otherUserId];
+            const unreadCount = unreadCounts[chat.id] || 0;
 
             return (
               lastMessages[chat.id] &&
               lastMessages[chat.id].length > 0 && (
                 <Card
                   key={chat.id}
-                  className='p-4 transition-shadow border-b rounded-none cursor-pointer hover:shadow '
+                  className='p-4 transition-shadow border-b rounded cursor-pointer hover:shadow '
                   onClick={() => router.push(`/chats/${chat.id}`)}
                 >
                   <div className='flex items-center gap-4'>
-                    <Avatar>
-                      <AvatarFallback>
-                        {otherUser?.name?.[0] || 'LB'}
-                      </AvatarFallback>
-                    </Avatar>
+                    <div className='relative w-10 h-10 transition-all duration-100 bg-gray-100 rounded-full cursor-pointer active:scale-95'>
+                      {otherUser?.avatar_url ? (
+                        <Image
+                          src={otherUser?.avatar_url}
+                          alt={otherUser?.name || 'Profile picture'}
+                          fill
+                          className='object-cover rounded-full'
+                          sizes='96px'
+                        />
+                      ) : (
+                        <div className='flex items-center justify-center w-10 h-10 text-lg font-medium text-gray-400'>
+                          {otherUser?.name
+                            ?.split(' ')
+                            .map((n) => n[0])
+                            .join('')
+                            .slice(0, 1)}
+                        </div>
+                      )}
+                      {unreadCount > 0 && (
+                        <div className='absolute w-5 h-5 text-xs text-center text-white bg-red-500 border border-white rounded-full -right-1 -bottom-1 aspect-square'>
+                          {unreadCount}
+                        </div>
+                      )}
+                    </div>
+
                     <div className='flex-1 min-w-0'>
                       <div className='flex items-start justify-between'>
                         <h3 className='font-semibold text-black truncate'>
@@ -165,17 +286,16 @@ export default function ChatsPage() {
                           })()}
                         </span>
                       </div>
-                      <div className='text-sm text-black truncate'>
+                      <div
+                        className={`text-sm text-black truncate ${
+                          unreadCount > 0 ? 'font-semibold' : ''
+                        }`}
+                      >
                         {lastMessages[chat.id] || (
                           <Skeleton className='w-[100px] h-[10px] rounded' />
                         )}
                       </div>
                     </div>
-                    {chat.unreadCount > 0 && (
-                      <div className='px-2 py-1 text-xs rounded-full bg-primary text-primary-foreground'>
-                        {chat.unreadCount}
-                      </div>
-                    )}
                   </div>
                 </Card>
               )
@@ -189,8 +309,7 @@ export default function ChatsPage() {
 
 function LoadingSkeleton() {
   return (
-    <div className='container px-4 py-8 mx-auto'>
-      <Skeleton className='w-48 h-8 mb-6' />
+    <div className='container p-4 mx-auto'>
       <div className='max-w-2xl mx-auto space-y-4'>
         {[...Array(5)].map((_, i) => (
           <Card key={i} className='p-4'>

@@ -27,17 +27,13 @@ export function Navbar() {
   // Show back button navbar for /chats page
   if (pathname === '/chats') {
     return (
-      <nav className='sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60'>
-        <div className='container flex h-16 items-center px-4'>
-          <div className='flex w-full items-center gap-4'>
-            <Button
-              variant='ghost'
-              onClick={() => router.back()}
-              className='mr-2'
-            >
-              <ArrowLeft className='h-5 w-5' />
+      <nav className='sticky top-0 z-50 w-full    backdrop-blur supports-[backdrop-filter]:bg-white/60'>
+        <div className='container flex items-center h-16 px-4 bg-black'>
+          <div className='flex items-center w-full gap-4'>
+            <Button variant='default' size='icon' onClick={() => router.back()}>
+              <ArrowLeft className='w-5 h-5' />
             </Button>
-            <h1 className='text-xl font-semibold'>My Chats</h1>
+            <h1 className='text-lg font-semibold text-white'>My Chats</h1>
           </div>
         </div>
       </nav>
@@ -46,12 +42,12 @@ export function Navbar() {
 
   // Default navbar for other pages
   return (
-    <nav className='sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60'>
-      <div className='container flex h-16 items-center px-4'>
-        <div className='flex w-full justify-between gap-6 md:gap-4'>
+    <nav className='sticky top-0 z-50 w-full bg-black backdrop-blur '>
+      <div className='container flex items-center h-16 px-4'>
+        <div className='flex justify-between w-full gap-6 md:gap-4'>
           {/* Brand/Logo - now links to /lawyers */}
           <Link href='/lawyers' className='flex items-center gap-2'>
-            <span className='text-xl font-bold'>LawBud</span>
+            <span className='text-xl font-bold text-white'>LawBud</span>
           </Link>
 
           {/* Desktop: Search + Profile */}
@@ -71,7 +67,7 @@ export function Navbar() {
       </div>
 
       {/* Mobile: Search Bar (shown below navbar) */}
-      <div className='border-b md:hidden px-4 pb-4 flex flex-row gap-2'>
+      <div className='flex flex-row gap-2 px-4 pb-4 border-b md:hidden'>
         <LawyerSearch lawyers={lawyers} />
       </div>
     </nav>

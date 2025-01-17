@@ -13,27 +13,45 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
 import { Button } from './ui/button';
+import Image from 'next/image';
 
 export function ProfileButton() {
   const router = useRouter();
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
-
+  const [avatarUrl, setAvatarUrl] = useState(null);
+  const [user, setUser] = useState(null);
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    async function fetchUserData() {
+      // Get initial session
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       setSession(session);
       setLoading(false);
-    });
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
+      if (session) {
+        const { data: userData } = await supabase
+          .from('users')
+          .select('*')
+          .eq('auth_id', session.user.id);
+        if (userData?.[0]) {
+          setAvatarUrl(userData[0].avatar_url);
+          setUser(userData[0]);
+        }
+      }
 
-    return () => subscription.unsubscribe();
+      // Listen for auth changes
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        setSession(session);
+      });
+
+      return () => subscription.unsubscribe();
+    }
+
+    fetchUserData();
   }, []);
 
   const handleLogout = async () => {
@@ -60,30 +78,38 @@ export function ProfileButton() {
     );
   }
 
-  const userInitials = session.user.user_metadata?.name
-    ? session.user.user_metadata.name
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-    : session.user.email[0].toUpperCase();
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Avatar className='h-8 w-8 cursor-pointer'>
-          <AvatarFallback>{userInitials}</AvatarFallback>
-        </Avatar>
+        <div className='relative w-10 h-10 overflow-hidden transition-all duration-100 bg-gray-100 rounded-full cursor-pointer active:scale-95'>
+          {avatarUrl ? (
+            <Image
+              src={avatarUrl}
+              alt={user?.name || 'Profile picture'}
+              fill
+              className='object-cover'
+              sizes='96px'
+            />
+          ) : (
+            <div className='flex items-center justify-center w-10 h-10 text-lg font-medium text-gray-400'>
+              {user?.name
+                ?.split(' ')
+                .map((n) => n[0])
+                .join('')}
+            </div>
+          )}
+        </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end' className='w-56'>
         <DropdownMenuItem asChild>
           <Link href='/profile' className='cursor-pointer'>
-            <User className='mr-2 h-4 w-4' />
+            <User className='w-4 h-4 mr-2' />
             <span>Profile</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
           <Link href='/profile/settings' className='cursor-pointer'>
-            <Settings className='mr-2 h-4 w-4' />
+            <Settings className='w-4 h-4 mr-2' />
             <span>Settings</span>
           </Link>
         </DropdownMenuItem>
@@ -91,7 +117,7 @@ export function ProfileButton() {
           className='text-red-600 cursor-pointer'
           onClick={handleLogout}
         >
-          <LogOut className='mr-2 h-4 w-4' />
+          <LogOut className='w-4 h-4 mr-2' />
           <span>Logout</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

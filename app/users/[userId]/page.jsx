@@ -14,12 +14,14 @@ import {
   MessageCircle,
   Bot,
   Award,
+  Loader2,
 } from 'lucide-react';
 import { useUser } from '@/app/contexts/UserContext';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/app/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
+import Image from 'next/image';
 
 function LawyerDetailsPage() {
   const params = useParams();
@@ -39,8 +41,9 @@ function LawyerDetailsPage() {
         // Find chats where:
         // 1. Current user is sender and lawyer is receiver OR
         // 2. Lawyer is sender and current user is receiver
-        .or(`sender_id.eq.${session.user.id},receiver_id.eq.${user.auth_id}`)
-
+        .or(
+          `and(sender_id.eq.${session.user.id},receiver_id.eq.${user.auth_id}),and(sender_id.eq.${user.auth_id},receiver_id.eq.${session.user.id})`
+        )
         .limit(1) // Get only the most recent chat
         .maybeSingle(); // Return single result or null
       console.log(existingChat);
@@ -63,7 +66,14 @@ function LawyerDetailsPage() {
   // }, [session?.user?.id, user?.auth_id]);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return (
+      <div className='container flex items-center justify-center h-screen px-4 py-8 mx-auto'>
+        <Button disabled>
+          <Loader2 className='animate-spin' />
+          connecting...
+        </Button>
+      </div>
+    );
   }
 
   if (!user) {
@@ -123,13 +133,28 @@ function LawyerDetailsPage() {
   };
 
   return (
-    <div className='container px-4 py-8 mx-auto'>
+    <div className='container p-4 mx-auto'>
       <Card className='p-6 mb-6'>
         <div className='flex items-start gap-4'>
-          <Avatar className={`h-20 w-20 ${user.isAI ? 'bg-primary' : ''}`}>
-            <AvatarImage src={user.image} alt={user.name} />
-            <AvatarFallback>{user.name?.[0]}</AvatarFallback>
-          </Avatar>
+          <div className='relative w-12 h-12 overflow-hidden bg-gray-100 rounded-full card-content'>
+            {user.avatar_url ? (
+              <Image
+                src={user.avatar_url}
+                alt={user.name || 'Lawyer picture'}
+                fill
+                className='object-cover card-content'
+                sizes='96px'
+              />
+            ) : (
+              <div className='flex items-center justify-center w-full h-full text-lg font-medium text-gray-400 card-content'>
+                {user.name
+                  ?.split(' ')
+                  .map((n) => n[0])
+                  .join('')
+                  .slice(0, 1)}
+              </div>
+            )}
+          </div>
           <div className='flex-1'>
             <div className='flex items-start justify-between'>
               <div>

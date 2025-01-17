@@ -8,6 +8,8 @@ import { useAuth } from '@/app/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/card';
 
 export default function ChatPage() {
   const params = useParams();
@@ -75,20 +77,12 @@ export default function ChatPage() {
     initializePage();
   }, [params.chatId, session?.user?.id]);
 
-  if (isLoading) {
-    return (
-      <div className='container flex items-center justify-center h-screen px-4 py-8 mx-auto'>
-        <Button disabled>
-          <Loader2 className='animate-spin' />
-          connecting...
-        </Button>
-      </div>
-    );
-  }
-
-  if (!chat) {
-    return <div>Chat not found</div>;
-  }
-
-  return <HumanChatInterface chat={chat} sender={sender} receiver={receiver} />;
+  return (
+    <HumanChatInterface
+      isLoading={isLoading}
+      chat={chat}
+      sender={sender}
+      receiver={receiver}
+    />
+  );
 }

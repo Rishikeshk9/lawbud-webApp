@@ -16,6 +16,10 @@ import {
   PhoneOff,
   Scale,
   Award,
+  Bot,
+  MessageCircle,
+  Heart,
+  Loader2,
 } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
 import { useLawyers } from '../contexts/LawyersContext';
@@ -25,6 +29,9 @@ import { supabase } from '@/lib/supabase';
 import { Warning } from 'postcss';
 import { Badge as BadgeUI } from '@/components/ui/badge';
 import LocationDisplay from '@/components/LocationDisplay';
+import LawyerCard from '@/components/LawyerCard';
+import { ProfilePictureUpload } from '@/components/ProfilePictureUpload';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ProfilePage() {
   const { user } = useUser();
@@ -33,6 +40,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userMetadata, setUserMetadata] = useState(null);
+  const [isSaved, setIsSaved] = useState(false);
+
   useEffect(() => {
     async function loadProfile() {
       try {
@@ -68,8 +77,15 @@ export default function ProfilePage() {
     console.log(savedLawyers);
   }, [savedLawyers]);
 
+  const handleProfilePictureUpdate = (newAvatarUrl) => {
+    setProfile((prev) => ({
+      ...prev,
+      avatar_url: newAvatarUrl,
+    }));
+  };
+
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <LoadingSkeleton />;
   }
 
   if (!profile) {
@@ -77,27 +93,13 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className='container px-4 py-8 mx-auto'>
-      <Card className='p-6 mb-6'>
+    <div className='container p-4 mx-auto'>
+      <Card className='w-full p-6 mb-6 md:max-w-max'>
         <div className='flex flex-col items-start gap-6 md:flex-row'>
-          <div className='relative'>
-            <Avatar className='w-24 h-24'>
-              <AvatarImage src={profile.avatar_url} alt={profile.name} />
-              <AvatarFallback>
-                {profile.name
-                  .split(' ')
-                  .map((n) => n[0])
-                  .join('')}
-              </AvatarFallback>
-            </Avatar>
-            <Button
-              size='icon'
-              variant='outline'
-              className='absolute bottom-0 right-0 rounded-full'
-            >
-              <Edit2 className='w-4 h-4' />
-            </Button>
-          </div>
+          <ProfilePictureUpload
+            user={profile}
+            onUpdate={handleProfilePictureUpdate}
+          />
           <div className='flex-grow'>
             <div className='flex items-center justify-between gap-2 align-middle w-max'>
               <h1 className='text-2xl font-bold '>{profile.name}</h1>{' '}
@@ -157,83 +159,40 @@ export default function ProfilePage() {
         </TabsList>
 
         <TabsContent value='saved'>
-          <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
+          <div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
             {savedLawyers?.length > 0 ? (
               savedLawyers?.map((lawyer) => (
-                <Card
+                <LawyerCard
+                  lawyer={lawyer}
+                  enableButtons={true}
                   key={lawyer.id}
-                  className='p-6 transition-shadow cursor-pointer hover:shadow-lg'
-                  onClick={() =>
-                    lawyer.isAI
-                      ? router.push('/lawyers/0')
-                      : router.push(`/lawyers/${lawyer.id}`)
-                  }
-                >
-                  <div className='flex items-start gap-4'>
-                    <Avatar
-                      className={`h-12 w-12 ${lawyer.isAI ? 'bg-primary' : ''}`}
-                    >
-                      <AvatarFallback>
-                        {lawyer.isAI ? (
-                          <Bot className='w-6 h-6' />
-                        ) : (
-                          lawyer.name.charAt(0)
-                        )}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className='flex-1'>
-                      <div className='flex items-start justify-between mb-2'>
-                        <h3 className='text-lg font-semibold'>{lawyer.name}</h3>
-                        {!lawyer.isAI && lawyer.reviews?.length > 0 && (
-                          <div className='flex items-center gap-1'>
-                            <Star className='w-5 h-5 text-yellow-400 fill-yellow-400' />
-                            <span className='font-semibold'>
-                              {lawyer.rating}
-                            </span>
-                            <span className='text-gray-500'>
-                              ({lawyer.reviews.length})
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {lawyer.isAI ? (
-                        <p className='text-sm text-muted-foreground '>
-                          Get instant legal guidance 24/7
-                        </p>
-                      ) : (
-                        <>
-                          <div className='flex flex-wrap gap-2 mb-2'>
-                            {lawyer.specializations?.map((spec, index) => (
-                              <BadgeUI key={index} variant='secondary'>
-                                {spec}
-                              </BadgeUI>
-                            ))}
-                          </div>
-                          <div className='space-y-2'>
-                            <div className='flex items-center text-sm text-muted-foreground'>
-                              <MapPin className='w-4 h-4 mr-1' />
-                              <span>
-                                {lawyer.district}, {lawyer.state}
-                              </span>
-                            </div>
-                            <div className='flex items-center text-sm text-muted-foreground'>
-                              <Award className='w-4 h-4 mr-1' />
-                              <span>{lawyer.experience} years experience</span>
-                            </div>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </Card>
+                />
               ))
             ) : (
-              <div className='text-center text-gray-500'>Coming Soon!</div>
+              <div className='text-center text-gray-500'>No saved lawyers</div>
             )}
           </div>
         </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className='container px-4 py-8 mx-auto'>
+      <div className='max-w-2xl mx-auto space-y-4'>
+        {[...Array(5)].map((_, i) => (
+          <Card key={i} className='p-4'>
+            <div className='flex items-center gap-4'>
+              <div className='flex-1'>
+                <Skeleton className='w-32 h-5 mb-2' />
+                <Skeleton className='w-full h-4' />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
