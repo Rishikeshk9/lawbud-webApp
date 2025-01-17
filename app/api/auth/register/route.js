@@ -40,10 +40,29 @@ export async function POST(req) {
 
     if (barError) throw barError;
 
+    // Create user in Supabase Auth
+    const { data: authData, error: authError } =
+      await supabaseAdmin.auth.signUp({
+        email: email,
+        password: Math.random().toString(36).slice(-8), // Generate a random password
+        options: {
+          data: {
+            name: name,
+            phone: phone,
+            email: email,
+            role: role,
+          },
+        },
+      });
+
+    if (authError) throw authError;
+
     // Begin transaction
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .insert({
+        auth_id: authData.user.id,
+        id: authData.user.id,
         name,
         email,
         phone,

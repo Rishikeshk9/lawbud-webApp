@@ -83,6 +83,8 @@ export default function ChatPage() {
     );
   }
 
+  console.log(receiver);
+
   if (receiver.isAI) {
     return <div>AI chat interface</div>; // TODO: add AI chat interface
   }

@@ -9,9 +9,11 @@ import { useRouter } from 'next/navigation';
 import { Award, Bot, MapPin, Star, MessageSquare } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ChatFab } from '@/components/ChatFab';
+import { useAuth } from '../contexts/AuthContext';
 
 function LawyersPage() {
   const { lawyers, isLoading, error } = useLawyers();
+  const { session } = useAuth();
   const [selectedSpecialization, setSelectedSpecialization] = useState(null);
   const router = useRouter();
 
@@ -32,14 +34,15 @@ function LawyersPage() {
     ),
   ];
 
-  // Filter lawyers based on selected specialization
+  // Filter lawyers based on selected specialization and exclude current logged in lawyer
   const filteredLawyers = selectedSpecialization
     ? lawyers.filter(
         (lawyer) =>
-          lawyer.isAI ||
-          lawyer.specializations?.includes(selectedSpecialization)
+          (lawyer.isAI ||
+            lawyer.specializations?.includes(selectedSpecialization)) &&
+          lawyer.auth_id !== session?.user?.id
       )
-    : lawyers;
+    : lawyers.filter((lawyer) => lawyer.auth_id !== session?.user?.id);
 
   return (
     <div className='container px-4 py-4 mx-auto'>
