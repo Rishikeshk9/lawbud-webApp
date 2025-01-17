@@ -86,6 +86,7 @@ export async function POST(req) {
         degree_certificate_url: degreeUrl.path,
         bar_membership_url: barUrl.path,
         verification_status: 'pending',
+        auth_id: authData.user.id,
       })
       .select()
       .single();
