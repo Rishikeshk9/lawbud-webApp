@@ -27,8 +27,8 @@ export function Navbar() {
   // Show back button navbar for /chats page
   if (pathname === '/chats') {
     return (
-      <nav className='sticky top-0 z-50 w-full    backdrop-blur supports-[backdrop-filter]:bg-white/60'>
-        <div className='container flex items-center h-16 px-4 bg-black'>
+      <nav className='sticky top-0 z-50 w-full '>
+        <div className='flex items-center h-16 px-4 bg-black'>
           <div className='flex items-center w-full gap-4'>
             <Button variant='default' size='icon' onClick={() => router.back()}>
               <ArrowLeft className='w-5 h-5' />

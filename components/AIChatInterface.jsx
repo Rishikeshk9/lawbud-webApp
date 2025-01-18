@@ -469,8 +469,13 @@ export function AIChatInterface({ lawyer }) {
                           : 'bg-black text-white'
                       }`}
                     >
-                      {message.content}
-
+                      <p
+                        dangerouslySetInnerHTML={{
+                          __html: message.content
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/__(.*?)__/g, '<em>$1</em>'),
+                        }}
+                      ></p>
                       <p
                         className={`text-xs text-gray-400  flex mt-1 pr-3  whitespace-normal text-nowrap ${
                           message.role === 'user' ? 'text-right' : 'text-left'

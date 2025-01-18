@@ -179,7 +179,7 @@ function LawyerCard({ lawyer, enableButtons }) {
   return (
     <Card
       key={lawyer.id}
-      className='max-w-md p-6 transition-shadow cursor-pointer hover:shadow-lg'
+      className='max-w-md p-6 transition-shadow cursor-pointer '
       onClick={(e) => {
         // Only navigate if the click was directly on the card
         if (e.target === e.currentTarget || e.target.closest('.card-content')) {
