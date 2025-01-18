@@ -1,30 +1,31 @@
-importScripts('https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js');
-importScripts(
-  'https://www.gstatic.com/firebasejs/10.5.0/firebase-messaging.js'
-);
+import { initializeApp } from 'firebase/app';
+import { getMessaging, onBackgroundMessage } from 'firebase/messaging/sw';
 
-// Initialize Firebase
-firebase.initializeApp({
-  apiKey: 'AIzaSyCD9RgP1uygEs-DkAMP9zIG8JIxNEucTko',
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: 'lawbud-797dc.firebaseapp.com',
   projectId: 'lawbud-797dc',
-  storageBucket: 'lawbud-797dc.firebasestorage.app',
+  storageBucket: 'lawbud-797dc.appspot.com',
   messagingSenderId: '75412950563',
   appId: '1:75412950563:web:0b735b553cabf923aa6b96',
   measurementId: 'G-RKWHCXPJY8',
-});
+};
+
+// Initialize Firebase
+const firebaseApp = initializeApp(firebaseConfig);
 
 // Retrieve Firebase Messaging object
-const messaging = firebase.messaging();
+const messaging = getMessaging(firebaseApp);
 
 // Handle background messages
-messaging.onBackgroundMessage((payload) => {
+onBackgroundMessage(messaging, (payload) => {
   console.log('Received background message: ', payload);
 
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,
-    icon: '/icon.png', // Replace with your icon path
+    icon: '/icon.png', // Replace with your custom icon path
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);

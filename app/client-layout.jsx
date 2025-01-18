@@ -21,13 +21,10 @@ export default function ClientLayout({ children }) {
 
   useEffect(() => {
     if (notification) {
-      const { title, body } = notification;
-
-      // Display notification as a browser notification
-      new Notification(title, { body });
+      console.log('Foreground notification:', notification);
+      new Notification(notification.title, { body: notification.body });
     }
   }, [notification]);
-
   return (
     <div className='relative flex flex-col min-h-screen'>
       {showNavbar && <Navbar />}

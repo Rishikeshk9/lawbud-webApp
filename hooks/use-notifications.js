@@ -1,36 +1,42 @@
 import { useEffect, useState } from 'react';
-import { requestPermission, onMessageListener } from '../lib/firebase'; // Adjust path as necessary
+import {
+  requestPermission,
+  onMessageListener,
+  initializeMessaging,
+} from '../lib/firebase';
 
 const useNotifications = () => {
   const [token, setToken] = useState(null);
   const [notification, setNotification] = useState(null);
 
   useEffect(() => {
-    // Request notification permission and get token
-    const getToken = async () => {
-      try {
-        const fetchedToken = await requestPermission();
-        if (fetchedToken) {
-          setToken(fetchedToken);
-        }
-      } catch (error) {
-        console.error('Failed to get notification token:', error);
+    const fetchToken = async () => {
+      await initializeMessaging(); // Ensure messaging is initialized
+      const token = await requestPermission();
+      if (token) {
+        setToken(token);
       }
     };
-
-    getToken();
+    fetchToken();
   }, []);
 
   useEffect(() => {
-    // Listen for incoming messages
-    const unsubscribe = onMessageListener().then((payload) => {
-      setNotification({
-        title: payload.notification.title,
-        body: payload.notification.body,
-      });
-    });
+    if (onMessageListener) {
+      const listener = onMessageListener()
+        ?.then((payload) => {
+          if (payload) {
+            setNotification({
+              title: payload.notification?.title || 'No title',
+              body: payload.notification?.body || 'No body',
+            });
+          }
+        })
+        .catch((error) => console.error('Error in onMessageListener:', error));
 
-    return () => unsubscribe && unsubscribe();
+      return () => {
+        listener && listener(); // Clean up listener if it exists
+      };
+    }
   }, []);
 
   return { token, notification };
