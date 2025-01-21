@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, MessageSquare } from 'lucide-react';
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/app/contexts/AuthContext';
@@ -75,17 +75,14 @@ export function ChatFab({ lawyerId, lawyerName }) {
   };
 
   return (
-    <div className='fixed bottom-6 right-6'>
-      <Button
-        asChild
-        size='md'
-        className='rounded-full shadow-lg hover:shadow-xl transition-all duration-200'
-      >
-        <Link href={href} className='flex items-center gap-2'>
-          <MessageCircle className='w-5 h-5' />
-          <span>{buttonText}</span>
-        </Link>
-      </Button>
-    </div>
+    <Button
+      asChild
+      size='icon'
+      className='fixed hidden md:flex bottom-8 right-8 h-14 w-14 rounded-full shadow-lg'
+    >
+      <Link href='/chats'>
+        <MessageSquare className='h-6 w-6' />
+      </Link>
+    </Button>
   );
 }

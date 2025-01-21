@@ -4,7 +4,7 @@ import { LawyerSearch } from '@/components/LawyerSearch';
 import { ProfileButton } from '@/components/ProfileButton';
 import { useLawyers } from '@/app/contexts/LawyersContext';
 import { usePathname, useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import LocationDisplay from './LocationDisplay';
@@ -59,8 +59,18 @@ export function Navbar() {
             <ProfileButton />
           </div>
 
-          {/* Mobile: Only Profile Button */}
+          {/* Mobile: Chats + Profile Button */}
           <div className='flex items-center gap-4 md:hidden'>
+            <Button
+              variant='ghost'
+              size='icon'
+              className='hidden text-white'
+              asChild
+            >
+              <Link href='/chats'>
+                <MessageSquare className='w-5 h-5' />
+              </Link>
+            </Button>
             <ProfileButton />
           </div>
         </div>
