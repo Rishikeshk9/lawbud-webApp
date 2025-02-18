@@ -21,98 +21,93 @@ export async function POST(req) {
     const degreeCertificate = formData.get('degreeCertificate');
     const barMembershipCertificate = formData.get('barMembershipCertificate');
 
-    // Upload certificates to storage
-    const { data: degreeUrl, error: degreeError } = await supabaseAdmin.storage
-      .from('certificates')
-      .upload(
-        `degree/${Date.now()}-${degreeCertificate.name}`,
-        degreeCertificate
-      );
+    let degreeUpload, barUpload;
 
-    if (degreeError) throw degreeError;
+    try {
+      // Upload certificates to storage first (outside transaction since storage operations can't be rolled back)
+      [degreeUpload, barUpload] = await Promise.all([
+        supabaseAdmin.storage
+          .from('certificates')
+          .upload(
+            `degree/${Date.now()}-${degreeCertificate.name}`,
+            degreeCertificate
+          ),
+        supabaseAdmin.storage
+          .from('certificates')
+          .upload(
+            `bar/${Date.now()}-${barMembershipCertificate.name}`,
+            barMembershipCertificate
+          ),
+      ]);
 
-    const { data: barUrl, error: barError } = await supabaseAdmin.storage
-      .from('certificates')
-      .upload(
-        `bar/${Date.now()}-${barMembershipCertificate.name}`,
-        barMembershipCertificate
-      );
+      if (degreeUpload.error)
+        throw new Error('Failed to upload degree certificate');
+      if (barUpload.error)
+        throw new Error('Failed to upload bar membership certificate');
 
-    if (barError) throw barError;
-
-    // Create user in Supabase Auth
-    const { data: authData, error: authError } =
-      await supabaseAdmin.auth.signUp({
-        email: email,
-        password: Math.random().toString(36).slice(-8), // Generate a random password
-        options: {
-          data: {
-            name: name,
-            phone: phone,
-            email: email,
-            role: role,
+      // Create user in Supabase Auth
+      const { data: authData, error: authError } =
+        await supabaseAdmin.auth.signUp({
+          email: email,
+          password: Math.random().toString(36).slice(-8),
+          options: {
+            data: {
+              name: name,
+              role: role,
+            },
           },
-        },
+        });
+
+      if (authError) throw new Error('Failed to create user account');
+
+      // Use single query transaction for database operations
+      const { data, error: transactionError } = await supabaseAdmin.rpc(
+        'create_lawyer_profile',
+        {
+          p_user_id: authData.user.id,
+          p_name: name,
+          p_email: email,
+          p_phone: phone,
+          p_role: role,
+          p_sanat_number: sanatNumber,
+          p_experience: experience,
+          p_state_id: state,
+          p_district_id: district,
+          p_languages: languages.split(',').map((lang) => lang.trim()),
+          p_degree_url: degreeUpload.data.path,
+          p_bar_url: barUpload.data.path,
+          p_specializations: specializations,
+        }
+      );
+
+      if (transactionError) throw transactionError;
+
+      return NextResponse.json({
+        message: 'Registration successful',
+        user: data,
       });
-
-    if (authError) throw authError;
-
-    // Begin transaction
-    const { data: user, error: userError } = await supabaseAdmin
-      .from('users')
-      .insert({
-        auth_id: authData.user.id,
-        id: authData.user.id,
-        name,
-        email,
-        phone,
-        role,
-      })
-      .select()
-      .single();
-
-    if (userError) throw userError;
-
-    // Insert lawyer details
-    const { error: lawyerError, data: lawyer } = await supabaseAdmin
-      .from('lawyers')
-      .insert({
-        user_id: user.id,
-        sanat_number: sanatNumber,
-        experience,
-        state_id: state,
-        district_id: district,
-        languages: languages.split(',').map((lang) => lang.trim()),
-        degree_certificate_url: degreeUrl.path,
-        bar_membership_url: barUrl.path,
-        verification_status: 'pending',
-        auth_id: authData.user.id,
-      })
-      .select()
-      .single();
-
-    if (lawyerError) throw lawyerError;
-
-    // Insert specializations
-    const specializationInserts = specializations.map((spec) => ({
-      lawyer_id: lawyer.id,
-      specialization_id: spec,
-    }));
-
-    const { error: specError } = await supabaseAdmin
-      .from('lawyer_specializations')
-      .insert(specializationInserts);
-
-    if (specError) throw specError;
-
-    return NextResponse.json({
-      message: 'Registration successful',
-      user: user,
-    });
+    } catch (error) {
+      // Clean up uploaded files if they exist
+      if (degreeUpload?.data?.path) {
+        await supabaseAdmin.storage
+          .from('certificates')
+          .remove([degreeUpload.data.path]);
+      }
+      if (barUpload?.data?.path) {
+        await supabaseAdmin.storage
+          .from('certificates')
+          .remove([barUpload.data.path]);
+      }
+      throw error;
+    }
   } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json(
-      { error: error.message || 'Registration failed' },
+      {
+        error: error.message || 'Registration failed',
+        details:
+          process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      },
       { status: 500 }
     );
   }

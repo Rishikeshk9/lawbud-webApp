@@ -10,29 +10,19 @@ export default function ClientLayout({ children }) {
   const pathname = usePathname();
 
   // List of paths where both Navbar and BottomNav should be hidden
-  const noNavPaths = [
-    '/login',
-    '/register',
-    '/register/lawyer',
-    '/lawyer-registration',
-  ];
+  const noNavPaths = ['/login', '/register'];
 
-  // List of paths where only BottomNav should be hidden
-  const noBottomNavPaths = [
-    ...noNavPaths,
-    '/chats/', // Hide on chat pages
-    '/lawyers/*/chat', // Hide on lawyer chat pages
-  ];
+  // List of landing page paths where BottomNav should be hidden on mobile
+  const landingPaths = ['/', '/about', '/privacy', '/terms'];
 
-  // Show navbar only on home page
-  const showNavbar = pathname === '/lawyers';
+  // Check if current path is in noNavPaths
+  const showNavbar = !noNavPaths.includes(pathname);
 
-  // Show bottom nav except on auth pages and chat pages
-  const showBottomNav = !noBottomNavPaths.some((path) =>
-    pathname.includes(path)
-  );
+  // Show BottomNav only if not in noNavPaths AND not in landingPaths
+  const showBottomNav =
+    !noNavPaths.includes(pathname) && !landingPaths.includes(pathname);
 
-  const { token, notification } = useNotifications();
+  const { notification } = useNotifications();
 
   useEffect(() => {
     if (notification) {
@@ -40,7 +30,7 @@ export default function ClientLayout({ children }) {
       new Notification(notification.title, { body: notification.body });
     }
   }, [notification]);
-  //asdas
+
   return (
     <div className='relative flex flex-col min-h-screen'>
       {showNavbar && <Navbar />}
