@@ -24,7 +24,7 @@ export async function POST(req) {
     let degreeUpload, barUpload;
 
     try {
-      // Upload certificates to storage first (outside transaction since storage operations can't be rolled back)
+      // Upload certificates to storage first
       [degreeUpload, barUpload] = await Promise.all([
         supabaseAdmin.storage
           .from('certificates')
@@ -45,7 +45,18 @@ export async function POST(req) {
       if (barUpload.error)
         throw new Error('Failed to upload bar membership certificate');
 
-      // Create user in Supabase Auth
+      // Map the role to the correct enum value (using lowercase as that's likely what's in the database)
+      const roleMap = {
+        lawyer: 'LAWYER',
+        user: 'USER',
+        admin: 'ADMIN',
+        ai: 'AI',
+      };
+
+      // Get the normalized role or default to 'user'
+      const normalizedRole = roleMap[role.toLowerCase()] || 'USER';
+
+      // Create user in Supabase Auth with role in user_metadata
       const { data: authData, error: authError } =
         await supabaseAdmin.auth.signUp({
           email: email,
@@ -53,12 +64,14 @@ export async function POST(req) {
           options: {
             data: {
               name: name,
-              role: role,
+              role: normalizedRole,
             },
           },
         });
-
-      if (authError) throw new Error('Failed to create user account');
+      console.log(authData);
+      console.log(authError);
+      if (authError)
+        throw new Error(`Failed to create user account: ${authError}`);
 
       // Use single query transaction for database operations
       const { data, error: transactionError } = await supabaseAdmin.rpc(
@@ -68,7 +81,7 @@ export async function POST(req) {
           p_name: name,
           p_email: email,
           p_phone: phone,
-          p_role: role,
+          p_role: normalizedRole,
           p_sanat_number: sanatNumber,
           p_experience: experience,
           p_state_id: state,
