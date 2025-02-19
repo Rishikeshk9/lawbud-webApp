@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, memo } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
@@ -23,39 +24,22 @@ import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 
-function LawyerCard({ lawyer, enableButtons }) {
+const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
   const router = useRouter();
   const { lawyers, saveLawyer, isLawyerSaved } = useLawyers();
   const [isSaved, setIsSaved] = useState(false);
   const { session } = useAuth();
-
   const { toast } = useToast();
+  const [showAllSpecializations, setShowAllSpecializations] = useState(false);
 
-  useEffect(() => {
-    const checkSavedStatus = async () => {
-      if (enableButtons && lawyer && !lawyer.isAI) {
-        const saved = await isLawyerSaved(lawyer.id);
-        setIsSaved(saved);
-      }
-    };
-    checkSavedStatus();
-    console.log(lawyer);
-  }, [lawyer, enableButtons]);
-
-  useEffect(() => {
-    if (enableButtons) {
-      checkExistingChat();
-    }
-  }, [session?.user?.id, lawyer?.user_id, enableButtons]);
-
-  const checkExistingChat = async () => {
+  // Define checkExistingChat before using it in useEffect
+  const checkExistingChat = useCallback(async () => {
     if (lawyer?.isAI) {
-      console.log('AI lawyer');
       const { data: existingChat, error } = await supabase
         .from('ai_chats')
         .select('*')
-        .eq(`user_id`, session.user.id)
-        .order('created_at', { ascending: false }) // Sort by latest chat
+        .eq(`user_id`, session?.user?.id)
+        .order('created_at', { ascending: false })
         .limit(10);
       if (error) {
         console.error('Error checking existing chat:', error);
@@ -63,7 +47,6 @@ function LawyerCard({ lawyer, enableButtons }) {
       }
 
       if (existingChat.length > 0) {
-        console.log('Existing chat found:', existingChat);
         return existingChat[0].id;
       }
     }
@@ -71,13 +54,9 @@ function LawyerCard({ lawyer, enableButtons }) {
     if (!session?.user?.id || !lawyer?.user_id) return;
 
     try {
-      console.log(session.user.id, lawyer.user_id);
       const { data: existingChat, error } = await supabase
         .from('chats')
         .select('*')
-        // Find chats where either:
-        // 1. Current user is sender and lawyer is receiver OR
-        // 2. Lawyer is sender and current user is receiver
         .or(
           `and(sender_id.eq.${session.user.id},receiver_id.eq.${lawyer.user_id}),and(sender_id.eq.${lawyer.user_id},receiver_id.eq.${session.user.id})`
         )
@@ -89,13 +68,28 @@ function LawyerCard({ lawyer, enableButtons }) {
       }
 
       if (existingChat) {
-        console.log('Existing chat found:', existingChat);
         return existingChat.id;
       }
     } catch (error) {
       console.error('Error in checkExistingChat:', error);
     }
-  };
+  }, [lawyer?.isAI, lawyer?.user_id, session?.user?.id]);
+
+  useEffect(() => {
+    const checkSavedStatus = async () => {
+      if (enableButtons && lawyer && !lawyer.isAI) {
+        const saved = await isLawyerSaved(lawyer.id);
+        setIsSaved(saved);
+      }
+    };
+    checkSavedStatus();
+  }, [lawyer?.id, enableButtons, isLawyerSaved]);
+
+  useEffect(() => {
+    if (enableButtons) {
+      checkExistingChat();
+    }
+  }, [enableButtons, checkExistingChat]);
 
   const handleSave = async (lawyerId) => {
     if (!session?.user?.id) {
@@ -132,7 +126,6 @@ function LawyerCard({ lawyer, enableButtons }) {
       console.log('Chat already exists');
       router.push(`/chats/${chatId}`);
     } else {
-      console.log('Creating new chat');
       const newChatId = await createNewChat();
       router.push(`/chats/${newChatId}`);
     }
@@ -183,10 +176,50 @@ function LawyerCard({ lawyer, enableButtons }) {
     return newChat.id;
   };
 
+  // Function to handle specializations display
+  const renderSpecializations = useCallback(() => {
+    if (!lawyer.specializations?.length) return null;
+
+    const MAX_VISIBLE = 2; // Maximum badges to show in one line
+
+    if (
+      showAllSpecializations ||
+      lawyer.specializations.length <= MAX_VISIBLE
+    ) {
+      return lawyer.specializations.map((spec, index) => (
+        <Badge key={index} variant='secondary' className='card-content'>
+          {spec}
+        </Badge>
+      ));
+    }
+
+    return (
+      <>
+        {lawyer.specializations.slice(0, MAX_VISIBLE).map((spec, index) => (
+          <Badge key={index} variant='secondary' className='card-content'>
+            {spec}
+          </Badge>
+        ))}
+        <Badge
+          variant='secondary'
+          className='cursor-pointer card-content hover:bg-secondary/80'
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowAllSpecializations(true);
+          }}
+        >
+          +{lawyer.specializations.length - MAX_VISIBLE} more
+        </Badge>
+      </>
+    );
+  }, [lawyer.specializations, showAllSpecializations]);
+
   return (
     <Card
       key={lawyer.id}
-      className='max-w-md p-6 transition-shadow cursor-pointer '
+      className={cn('max-w-md p-6 transition-shadow cursor-pointer', {
+        'hover:shadow-md': enableButtons,
+      })}
       onClick={(e) => {
         // Only navigate if the click was directly on the card
         if (e.target === e.currentTarget || e.target.closest('.card-content')) {
@@ -261,15 +294,19 @@ function LawyerCard({ lawyer, enableButtons }) {
           ) : (
             <>
               <div className='flex flex-wrap gap-2 mb-2 card-content'>
-                {lawyer.specializations?.map((spec, index) => (
+                {renderSpecializations()}
+                {showAllSpecializations && (
                   <Badge
-                    key={index}
                     variant='secondary'
-                    className='card-content'
+                    className='cursor-pointer card-content hover:bg-secondary/80'
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowAllSpecializations(false);
+                    }}
                   >
-                    {spec}
+                    Show less
                   </Badge>
-                ))}
+                )}
               </div>
               <div className='space-y-2 card-content'>
                 <div className='flex items-center text-sm card-content'>
@@ -295,7 +332,7 @@ function LawyerCard({ lawyer, enableButtons }) {
                   e.stopPropagation(); // Stop event bubbling
                   handleChat();
                 }}
-                className='flex-1 gap-2'
+                className='gap-2 '
               >
                 {lawyer.isAI ? (
                   <>
@@ -315,6 +352,6 @@ function LawyerCard({ lawyer, enableButtons }) {
       </div>
     </Card>
   );
-}
+});
 
 export default LawyerCard;

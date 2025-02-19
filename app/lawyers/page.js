@@ -1,7 +1,7 @@
 'use client';
 
 import { useLawyers } from '@/app/contexts/LawyersContext';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,6 +14,29 @@ function LawyersPage() {
   const { session } = useAuth();
   const [selectedSpecialization, setSelectedSpecialization] = useState(null);
 
+  // Move useMemo before any conditional returns
+  const specializations = useMemo(() => {
+    return [
+      ...new Set(
+        lawyers
+          ?.filter((lawyer) => !lawyer.isAI)
+          ?.flatMap((lawyer) => lawyer.specializations || []) || []
+      ),
+    ];
+  }, [lawyers]);
+
+  const filteredLawyers = useMemo(() => {
+    if (!lawyers) return [];
+    return selectedSpecialization
+      ? lawyers.filter(
+          (lawyer) =>
+            (lawyer.isAI ||
+              lawyer.specializations?.includes(selectedSpecialization)) &&
+            lawyer.user_id !== session?.user?.id
+        )
+      : lawyers.filter((lawyer) => lawyer.user_id !== session?.user?.id);
+  }, [lawyers, selectedSpecialization, session?.user?.id]);
+
   if (isLoading) {
     return <LoadingSkeleton />;
   }
@@ -22,35 +45,16 @@ function LawyersPage() {
     return <div>Error: {error}</div>;
   }
 
-  // Get unique specializations
-  const specializations = [
-    ...new Set(
-      lawyers
-        .filter((lawyer) => !lawyer.isAI)
-        .flatMap((lawyer) => lawyer.specializations || [])
-    ),
-  ];
-
-  // Filter lawyers based on selected specialization and exclude current logged in lawyer
-  const filteredLawyers = selectedSpecialization
-    ? lawyers.filter(
-        (lawyer) =>
-          (lawyer.isAI ||
-            lawyer.specializations?.includes(selectedSpecialization)) &&
-          lawyer.user_id !== session?.user?.id
-      )
-    : lawyers.filter((lawyer) => lawyer.user_id !== session?.user?.id);
-
   return (
     <div className='container px-4 py-4 mx-auto'>
-      <ChatFab />
+      {/* <ChatFab /> */}
 
       {/* Specialization filters */}
       <div className='mb-4'>
         <div className='flex flex-wrap gap-2'>
           <Badge
             variant={selectedSpecialization === null ? 'default' : 'outline'}
-            className='cursor-pointer '
+            className='cursor-pointer'
             onClick={() => setSelectedSpecialization(null)}
           >
             All
@@ -63,7 +67,7 @@ function LawyersPage() {
                   ? 'default'
                   : 'outline'
               }
-              className='cursor-pointer '
+              className='cursor-pointer'
               onClick={() => setSelectedSpecialization(specialization)}
             >
               {specialization}
@@ -75,7 +79,7 @@ function LawyersPage() {
       {/* Lawyers grid */}
       <div className='grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3'>
         {filteredLawyers.map((lawyer) => (
-          <LawyerCard lawyer={lawyer} key={lawyer.id} />
+          <LawyerCard lawyer={lawyer} key={lawyer.id} enableButtons={true} />
         ))}
       </div>
     </div>

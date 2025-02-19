@@ -11,11 +11,11 @@ const navItems = [
     href: '/',
     icon: Home,
   },
-  {
-    label: 'Search',
-    href: '/lawyers',
-    icon: Search,
-  },
+  // {
+  //   label: 'Search',
+  //   href: '/lawyers',
+  //   icon: Search,
+  // },
   {
     label: 'Chats',
     href: '/chats',
@@ -42,7 +42,7 @@ export function BottomNav() {
   }
 
   return (
-    <div className='fixed bottom-0 left-0 right-0 z-50 bg-white border-t md:hidden'>
+    <div className='fixed bottom-0 left-0 right-0 z-50 bg-white border-t '>
       <nav className='flex justify-around p-2'>
         {navItems.map((item) => {
           const Icon = item.icon;
