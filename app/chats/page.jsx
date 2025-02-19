@@ -175,14 +175,14 @@ export default function ChatsPage() {
       const { data: sender, error: senderError } = await supabase
         .from('users')
         .select('*')
-        .eq('auth_id', senderId)
+        .eq('id', senderId)
         .limit(1)
         .single();
 
       const { data: receiver, error: receiverError } = await supabase
         .from('users')
         .select('*')
-        .eq('auth_id', receiverId)
+        .eq('id', receiverId)
         .limit(1)
         .single();
 

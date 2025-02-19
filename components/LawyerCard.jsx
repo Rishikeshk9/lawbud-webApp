@@ -46,7 +46,7 @@ function LawyerCard({ lawyer, enableButtons }) {
     if (enableButtons) {
       checkExistingChat();
     }
-  }, [session?.user?.id, lawyer?.auth_id, enableButtons]);
+  }, [session?.user?.id, lawyer?.user_id, enableButtons]);
 
   const checkExistingChat = async () => {
     if (lawyer?.isAI) {
@@ -68,10 +68,10 @@ function LawyerCard({ lawyer, enableButtons }) {
       }
     }
 
-    if (!session?.user?.id || !lawyer?.auth_id) return;
+    if (!session?.user?.id || !lawyer?.user_id) return;
 
     try {
-      console.log(session.user.id, lawyer.auth_id);
+      console.log(session.user.id, lawyer.user_id);
       const { data: existingChat, error } = await supabase
         .from('chats')
         .select('*')
@@ -79,7 +79,7 @@ function LawyerCard({ lawyer, enableButtons }) {
         // 1. Current user is sender and lawyer is receiver OR
         // 2. Lawyer is sender and current user is receiver
         .or(
-          `and(sender_id.eq.${session.user.id},receiver_id.eq.${lawyer.auth_id}),and(sender_id.eq.${lawyer.auth_id},receiver_id.eq.${session.user.id})`
+          `and(sender_id.eq.${session.user.id},receiver_id.eq.${lawyer.user_id}),and(sender_id.eq.${lawyer.user_id},receiver_id.eq.${session.user.id})`
         )
         .limit(1)
         .maybeSingle();
@@ -121,13 +121,18 @@ function LawyerCard({ lawyer, enableButtons }) {
     const chatId = await checkExistingChat();
 
     if (lawyer.isAI && chatId) {
+      console.log('AI chat already exists');
+      // AI chat
       router.push(`/chats/ai/${chatId}`);
     } else if (lawyer.isAI) {
+      console.log('Creating new AI chat');
       const newChatId = await createNewAIChat();
       router.push(`/chats/ai/${newChatId}`);
     } else if (chatId) {
+      console.log('Chat already exists');
       router.push(`/chats/${chatId}`);
     } else {
+      console.log('Creating new chat');
       const newChatId = await createNewChat();
       router.push(`/chats/${newChatId}`);
     }
@@ -136,12 +141,14 @@ function LawyerCard({ lawyer, enableButtons }) {
   const createNewChat = async () => {
     try {
       // Insert new chat record
+      console.log('Creating new chat');
+      console.log(session.user.id, lawyer.user_id);
       const { data: newChat, error } = await supabase
         .from('chats')
         .insert([
           {
             sender_id: session.user.id,
-            receiver_id: lawyer.auth_id,
+            receiver_id: lawyer.user_id,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },

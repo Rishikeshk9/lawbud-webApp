@@ -32,7 +32,7 @@ function LawyerDetailsPage() {
   const [existingChatId, setExistingChatId] = useState(null);
 
   const checkExistingChat = async () => {
-    if (!session?.user?.id || !user?.auth_id) return;
+    if (!session?.user?.id || !user?.id) return;
 
     try {
       const { data: existingChat, error } = await supabase
@@ -42,7 +42,7 @@ function LawyerDetailsPage() {
         // 1. Current user is sender and lawyer is receiver OR
         // 2. Lawyer is sender and current user is receiver
         .or(
-          `and(sender_id.eq.${session.user.id},receiver_id.eq.${user.auth_id}),and(sender_id.eq.${user.auth_id},receiver_id.eq.${session.user.id})`
+          `and(sender_id.eq.${session.user.id},receiver_id.eq.${user.id}),and(sender_id.eq.${user.id},receiver_id.eq.${session.user.id})`
         )
         .limit(1) // Get only the most recent chat
         .maybeSingle(); // Return single result or null
@@ -63,7 +63,7 @@ function LawyerDetailsPage() {
   };
   // useEffect(() => {
   //   checkExistingChat();
-  // }, [session?.user?.id, user?.auth_id]);
+  // }, [session?.user?.id, user?.id]);
 
   if (isLoading) {
     return (
@@ -100,7 +100,7 @@ function LawyerDetailsPage() {
         .insert([
           {
             sender_id: session.user.id,
-            receiver_id: user.auth_id,
+            receiver_id: user.id,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },

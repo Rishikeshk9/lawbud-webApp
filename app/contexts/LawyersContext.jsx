@@ -73,7 +73,7 @@ export function LawyersProvider({ children }) {
         name: lawyer.users.name,
         email: lawyer.users.email,
         phone: lawyer.users.phone,
-        auth_id: lawyer.auth_id,
+        user_id: lawyer.user_id,
         specializations: lawyer.lawyer_specializations.map(
           (spec) => spec.specializations.name
         ),

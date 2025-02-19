@@ -41,7 +41,7 @@ export default function ChatPage() {
         const { data: receiverData, error: receiverError } = await supabase
           .from('users')
           .select('*')
-          .eq('role', 'ai')
+          .eq('role', 'AI')
           .single();
 
         if (receiverError && receiverError.code !== 'PGRST116') {
@@ -54,7 +54,7 @@ export default function ChatPage() {
         const { data: senderData, error: senderError } = await supabase
           .from('users')
           .select('*')
-          .eq('auth_id', session.user.id)
+          .eq('id', session.user.id)
           .single();
 
         if (senderError && senderError.code !== 'PGRST116') {

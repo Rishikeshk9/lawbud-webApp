@@ -116,10 +116,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className='min-h-screen flex items-center justify-center p-4'>
+    <div className='flex items-center justify-center min-h-screen p-4'>
       <Card className='w-full max-w-md p-6 space-y-6'>
-        <div className='text-center space-y-2'>
-          <h1 className='text-2xl font-bold'>Welcome Back</h1>
+        <div className='space-y-2 text-center'>
+          <h1 className='text-2xl font-bold'>Welcome</h1>
           <p className='text-gray-500'>Login to your account</p>
         </div>
 
@@ -169,7 +169,7 @@ export default function LoginPage() {
           </div>
         </form>
 
-        <div className='text-center space-y-2'>
+        <div className='space-y-2 text-center'>
           <p className='text-sm text-gray-500'>
             Don&apos;t have an account?{' '}
             <Link href='/register' className='text-primary hover:underline'>

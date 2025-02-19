@@ -103,7 +103,7 @@ export default function ProfilePage() {
           <div className='flex-grow'>
             <div className='flex items-center justify-between gap-2 align-middle w-max'>
               <h1 className='text-2xl font-bold '>{profile.name}</h1>{' '}
-              {profile.role === 'lawyer' && (
+              {profile.role === 'LAWYER' && (
                 <p className='flex items-center gap-1 px-1 py-1 text-xs text-white bg-black rounded w-max'>
                   <Scale className='w-4 h-4' /> Lawyer{' '}
                 </p>

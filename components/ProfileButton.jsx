@@ -34,7 +34,7 @@ export function ProfileButton() {
         const { data: userData } = await supabase
           .from('users')
           .select('*')
-          .eq('auth_id', session.user.id);
+          .eq('id', session.user.id);
         if (userData?.[0]) {
           setAvatarUrl(userData[0].avatar_url);
           setUser(userData[0]);

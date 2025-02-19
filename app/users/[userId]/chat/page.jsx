@@ -25,7 +25,7 @@ export default function ChatPage() {
         const { data: lawyerData, error: lawyerError } = await supabase
           .from('users')
           .select('*')
-          .eq('auth_id', session.user.id)
+          .eq('id', session.user.id)
 
           .single();
 

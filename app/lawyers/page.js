@@ -37,9 +37,9 @@ function LawyersPage() {
         (lawyer) =>
           (lawyer.isAI ||
             lawyer.specializations?.includes(selectedSpecialization)) &&
-          lawyer.auth_id !== session?.user?.id
+          lawyer.user_id !== session?.user?.id
       )
-    : lawyers.filter((lawyer) => lawyer.auth_id !== session?.user?.id);
+    : lawyers.filter((lawyer) => lawyer.user_id !== session?.user?.id);
 
   return (
     <div className='container px-4 py-4 mx-auto'>

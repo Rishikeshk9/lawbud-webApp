@@ -22,7 +22,7 @@ export function LawyerSearch({ lawyers = [] }) {
       // Filter out AI lawyer and current user
       if (
         lawyer.isAI || // Assuming 'ai-lawyer' is the AI's ID
-        lawyer.auth_id === session?.user?.id || // Filter out current user if they're a lawyer
+        lawyer.user_id === session?.user?.id || // Filter out current user if they're a lawyer
         !searchQuery
       ) {
         return false;

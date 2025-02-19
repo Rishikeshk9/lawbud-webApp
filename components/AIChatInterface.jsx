@@ -48,10 +48,14 @@ export function AIChatInterface({ lawyer }) {
   }, []);
 
   useEffect(() => {
+    fetchChats();
+  }, []);
+
+  useEffect(() => {
     if (isSidebarOpen) {
       fetchChats();
     }
-  }, [isSidebarOpen]);
+  }, [isSidebarOpen, selectedChat]);
 
   // Modified fetchChats to return the chats
   const fetchChats = async () => {
@@ -289,7 +293,7 @@ export function AIChatInterface({ lawyer }) {
   return (
     <div className='flex w-full h-screen'>
       {/* Mobile Header */}
-      <div className='fixed top-0 left-0 right-0 z-50 flex items-center gap-4 p-4 text-white bg-black border-b border-gray-800 md:hidden'>
+      <div className='fixed top-0 left-0 right-0 z-50 flex items-center gap-4 p-4 text-white bg-black border-b border-gray-800 '>
         <Button variant='ghost' size='icon' onClick={() => router.back()}>
           <ArrowLeft className='w-5 h-5' />
         </Button>
@@ -298,7 +302,7 @@ export function AIChatInterface({ lawyer }) {
             variant='ghost'
             size='icon'
             onClick={() => setIsSidebarOpen(true)}
-            className='md:hidden'
+            className=''
           >
             <Menu className='w-5 h-5' />
           </Button>
@@ -366,7 +370,7 @@ export function AIChatInterface({ lawyer }) {
 
       {/* Desktop Sidebar */}
       {!isAnonymous && (
-        <div className='flex-col hidden p-4 bg-black border-r border-gray-800 w-80 md:flex'>
+        <div className='flex-col hidden p-4 bg-black border-r border-gray-800 w-80 '>
           <div className='flex items-center justify-between mb-4'>
             <h3 className='text-lg font-semibold text-white'>Chats</h3>
             <Button onClick={createNewChat} variant='outline' size='sm'>

@@ -58,11 +58,10 @@ export default function RegisterPage() {
       const { error: profileError } = await supabase.from('users').insert([
         {
           id: authData.user.id,
-          auth_id: authData.user.id,
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
-          role: 'user',
+          role: 'USER',
         },
       ]);
 

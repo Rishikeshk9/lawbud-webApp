@@ -64,7 +64,8 @@ export function HumanChatInterface({ isLoading, chat, sender, receiver }) {
         }
 
         let otherUser;
-        if (receiver.role === 'lawyer') {
+        if (receiver.role === 'LAWYER') {
+          console.log('CHATTING with lawyer');
           const { data } = await supabase
             .from('lawyers')
             .select('*')
@@ -72,10 +73,11 @@ export function HumanChatInterface({ isLoading, chat, sender, receiver }) {
             .single();
           otherUser = data;
         } else {
+          console.log('CHATTING with user');
           const { data } = await supabase
             .from('users')
             .select('*')
-            .eq('auth_id', receiver.id)
+            .eq('id', receiver.id)
             .single();
           otherUser = data;
         }
@@ -194,13 +196,14 @@ export function HumanChatInterface({ isLoading, chat, sender, receiver }) {
     <div className='flex flex-col h-screen'>
       {/* Header */}
       <div
-        onClick={() =>
+        onClick={() => {
+          console.log(otherParty);
           router.push(
-            otherParty.role === 'user'
+            otherParty.role === 'USER'
               ? `/users/${otherParty.id}`
               : `/lawyers/${otherParty.id}`
-          )
-        }
+          );
+        }}
         className='sticky top-0 z-40 flex items-center w-full h-16 gap-4 p-4 text-white bg-black border-b border-gray-800'
       >
         <Button variant='default' size='icon' onClick={() => router.back()}>
