@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -11,7 +11,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Toaster } from '@/components/ui/toaster';
 
-export default function BillingPage() {
+function BillingPageContent() {
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState(null);
   const [customer, setCustomer] = useState(null);
@@ -247,5 +247,23 @@ export default function BillingPage() {
         <p className='text-gray-600'>No payment history available</p>
       )}
     </div>
+  );
+}
+
+export default function BillingPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className='container max-w-4xl p-6 mx-auto'>
+          <div className='animate-pulse'>
+            <div className='h-8 mb-8 bg-gray-200 rounded w-60' />
+            <div className='h-40 mb-6 bg-gray-200 rounded' />
+            <div className='bg-gray-200 rounded h-60' />
+          </div>
+        </div>
+      }
+    >
+      <BillingPageContent />
+    </Suspense>
   );
 }
