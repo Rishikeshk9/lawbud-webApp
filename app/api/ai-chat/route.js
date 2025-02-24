@@ -25,8 +25,7 @@ export async function POST(request) {
           2. Help users understand their legal rights and obligations
           3. Explain legal concepts in simple terms
           4. Give detailed answers to the user's question
-          
- `,
+                    5. If the user's question is not related to Indian law, say "I'm sorry, I can only provide information on Indian law."`,
       },
     ];
 
@@ -66,7 +65,7 @@ export async function POST(request) {
         'ft:gpt-4o-mini-2024-07-18:personal:bns:AnD2Z4Pz',
       messages: conversationHistory,
       temperature: 0.7,
-      max_tokens: 500,
+      max_tokens: 1000,
     });
 
     const aiResponse =

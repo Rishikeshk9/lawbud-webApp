@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useRouter } from 'next/navigation';
-import { LogOut, Settings, User } from 'lucide-react';
+import { CreditCard, LogOut, Settings, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import Link from 'next/link';
@@ -113,6 +113,13 @@ export function ProfileButton() {
             <span>Settings</span>
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href='/profile/billing' className='cursor-pointer'>
+            <CreditCard className='w-4 h-4 mr-2' />
+            <span>Billing</span>
+          </Link>
+        </DropdownMenuItem>
+
         <DropdownMenuItem
           className='text-red-600 cursor-pointer'
           onClick={handleLogout}
