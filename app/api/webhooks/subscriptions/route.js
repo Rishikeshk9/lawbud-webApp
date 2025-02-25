@@ -107,17 +107,30 @@ export async function POST(request) {
       }
       case 'invoice.payment_succeeded': {
         const invoicePaymentSucceeded = event.data.object;
-        const updatedUserId = invoicePaymentSucceeded.metadata?.userId;
-        const updatedSubscriptionId = invoicePaymentSucceeded.subscription;
-        const currentPlan = invoicePaymentSucceeded.items.data[0].price.id;
-        const subscriptionStatus = invoicePaymentSucceeded.status;
+        console.log('invoicePaymentSucceeded', invoicePaymentSucceeded);
 
-        if (!updatedUserId) {
-          console.error('User ID missing in metadata');
+        // Check if subscription ID exists
+        if (!invoicePaymentSucceeded.subscription) {
+          console.error('No subscription ID found in invoice');
           break;
         }
 
         try {
+          // Get subscription details from the invoice
+          const subscription = await stripe.subscriptions.retrieve(
+            invoicePaymentSucceeded.subscription
+          );
+
+          const updatedUserId = subscription.metadata?.userId;
+          const updatedSubscriptionId = subscription.id;
+          const currentPlan = subscription.items.data[0].price.id;
+          const subscriptionStatus = subscription.status;
+
+          if (!updatedUserId) {
+            console.error('User ID missing in metadata');
+            break;
+          }
+
           if (subscriptionStatus === 'active') {
             await updateUserSubscriptionInDatabase(updatedUserId, currentPlan);
             console.log(`User ${updatedUserId} upgraded to ${currentPlan}`);
@@ -127,20 +140,37 @@ export async function POST(request) {
             );
           }
         } catch (error) {
-          console.error('Error updating user subscription:', error);
+          console.error('Error processing invoice payment succeeded:', error);
         }
         break;
       }
       case 'invoice.payment_failed': {
         const invoicePaymentFailed = event.data.object;
-        const failedUserId = invoicePaymentFailed.metadata?.userId;
-        const currentPlan = invoicePaymentFailed.items.data[0].price.id;
+
+        // Check if subscription ID exists
+        if (!invoicePaymentFailed.subscription) {
+          console.error('No subscription ID found in invoice');
+          break;
+        }
 
         try {
+          // Get subscription details from the invoice
+          const subscription = await stripe.subscriptions.retrieve(
+            invoicePaymentFailed.subscription
+          );
+
+          const failedUserId = subscription.metadata?.userId;
+          const currentPlan = subscription.items.data[0].price.id;
+
+          if (!failedUserId) {
+            console.error('User ID missing in metadata');
+            break;
+          }
+
           await downgradeUserPlan(failedUserId, 'free');
           console.log(`Downgraded user ${failedUserId} due to failed payment`);
         } catch (error) {
-          console.error('Error downgrading user:', error);
+          console.error('Error processing invoice payment failed:', error);
         }
         break;
       }
