@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/webhooks/subscriptions/",
+      "destination": "/api/webhooks/subscriptions"
+    },
+    {
+      "source": "/api/webhooks/checkout/",
+      "destination": "/api/webhooks/checkout"
+    }
+  ]
+}

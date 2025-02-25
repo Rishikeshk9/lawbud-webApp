@@ -5,6 +5,11 @@ import { supabase } from '@/lib/supabase';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
+export const config = {
+  api: {
+    bodyParser: false, // Ensure raw body parsing
+  },
+};
 async function updateUserSubscriptionInDatabase(userId, newPlan) {
   await supabase
     .from('users')
