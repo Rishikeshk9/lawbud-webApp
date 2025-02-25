@@ -57,6 +57,7 @@ export async function POST(request) {
         priceId,
       },
     });
+    console.log('checkoutSession', checkoutSession);
 
     return NextResponse.json({ result: checkoutSession, ok: true });
   } catch (error) {
