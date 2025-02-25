@@ -34,6 +34,7 @@ export async function POST(request) {
         break;
       case 'checkout.session.completed':
         const checkoutSessionCompleted = event.data.object;
+        console.log('checkoutSessionCompleted', checkoutSessionCompleted);
         // Then define and call a function to handle the event checkout.session.completed
         break;
       case 'checkout.session.expired':
