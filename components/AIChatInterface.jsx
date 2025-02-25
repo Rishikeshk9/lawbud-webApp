@@ -14,11 +14,12 @@ import Link from 'next/link';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { VisuallyHidden } from '@/components/ui/visually-hidden';
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { checkFeatureAccess, incrementFeatureUsage } from '@/lib/subscription';
 
-export function AIChatInterface({ lawyer }) {
+export function AIChatInterface({ lawyer, userId }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
@@ -28,6 +29,7 @@ export function AIChatInterface({ lawyer }) {
   const router = useRouter();
   const params = useParams();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [canAccessChat, setCanAccessChat] = useState(false);
 
   // Modified useEffect to load latest chat
   useEffect(() => {
@@ -56,6 +58,23 @@ export function AIChatInterface({ lawyer }) {
       fetchChats();
     }
   }, [isSidebarOpen, selectedChat]);
+
+  useEffect(() => {
+    async function checkAccess() {
+      try {
+        const { allowed } = await checkFeatureAccess(userId, 'ai_chat');
+        setCanAccessChat(allowed);
+      } catch (error) {
+        console.error('Error checking chat access:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to check chat access',
+          variant: 'destructive',
+        });
+      }
+    }
+    if (userId) checkAccess();
+  }, [userId, toast]);
 
   // Modified fetchChats to return the chats
   const fetchChats = async () => {
@@ -168,11 +187,21 @@ export function AIChatInterface({ lawyer }) {
     try {
       setIsLoading(true);
 
-      // // Ensure we have a chat ID if user is logged in
-      // let currentChatId = chatId;
-      // if (!isAnonymous && !currentChatId) {
-      //   currentChatId = await initializeChat();
-      // }
+      // Check if user can send more messages
+      const { allowed, remaining } = await incrementFeatureUsage(
+        userId,
+        'ai_chat'
+      );
+
+      if (!allowed) {
+        toast({
+          title: 'Usage Limit Reached',
+          description:
+            "You've reached your daily AI chat limit. Please upgrade your plan for unlimited access.",
+          variant: 'destructive',
+        });
+        return;
+      }
 
       // Add user message to UI
       const newUserMessage = {
@@ -220,10 +249,14 @@ export function AIChatInterface({ lawyer }) {
         await saveMessage(data.message, 'assistant', selectedChat);
       }
 
-      // Update chats list if this is a new chat
-      // if (!isAnonymous && !chatId) {
-      //   fetchChats();
-      // }
+      // Show warning when approaching limit
+      if (remaining <= 5) {
+        toast({
+          title: 'Usage Alert',
+          description: `You have ${remaining} AI chat messages remaining today.`,
+          variant: 'warning',
+        });
+      }
     } catch (error) {
       console.error('Error:', error);
       setMessages((prev) => prev.filter((msg) => msg.role !== 'typing'));
@@ -289,6 +322,27 @@ export function AIChatInterface({ lawyer }) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages]);
+
+  if (isLoading) {
+    return <div className='flex justify-center p-4'>Loading...</div>;
+  }
+
+  if (!canAccessChat) {
+    return (
+      <div className='flex flex-col items-center justify-center p-6'>
+        <h2 className='text-xl font-semibold'>Upgrade Required</h2>
+        <p className='mt-2 text-gray-600'>
+          AI chat is not available in your current plan.
+        </p>
+        <Button
+          onClick={() => router.push('/profile/billing')}
+          className='mt-4'
+        >
+          Upgrade Plan
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className='flex w-full h-screen'>

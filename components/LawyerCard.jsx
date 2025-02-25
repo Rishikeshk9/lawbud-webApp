@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useState, useCallback, memo } from 'react';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
@@ -23,6 +25,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
+import { checkLawyerChatInitiation } from '@/lib/subscription';
 
 const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
   const router = useRouter();
@@ -31,6 +34,8 @@ const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
   const { session } = useAuth();
   const { toast } = useToast();
   const [showAllSpecializations, setShowAllSpecializations] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [canChat, setCanChat] = useState(true);
 
   // Define checkExistingChat before using it in useEffect
   const checkExistingChat = useCallback(async () => {
@@ -91,6 +96,19 @@ const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
     }
   }, [enableButtons, checkExistingChat]);
 
+  useEffect(() => {
+    const checkChatAccess = async () => {
+      if (!lawyer.isAI && session?.user?.id) {
+        const { allowed } = await checkLawyerChatInitiation(
+          session.user.id,
+          lawyer.user_id
+        );
+        setCanChat(allowed);
+      }
+    };
+    checkChatAccess();
+  }, [lawyer.isAI, lawyer.user_id, session?.user?.id]);
+
   const handleSave = async (lawyerId) => {
     if (!session?.user?.id) {
       toast({
@@ -110,27 +128,6 @@ const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
         : 'Lawyer has been removed from your list',
     });
   };
-
-  const handleChat = async () => {
-    const chatId = await checkExistingChat();
-
-    if (lawyer.isAI && chatId) {
-      console.log('AI chat already exists');
-      // AI chat
-      router.push(`/chats/ai/${chatId}`);
-    } else if (lawyer.isAI) {
-      console.log('Creating new AI chat');
-      const newChatId = await createNewAIChat();
-      router.push(`/chats/ai/${newChatId}`);
-    } else if (chatId) {
-      console.log('Chat already exists');
-      router.push(`/chats/${chatId}`);
-    } else {
-      const newChatId = await createNewChat();
-      router.push(`/chats/${newChatId}`);
-    }
-  };
-
   const createNewChat = async () => {
     try {
       // Insert new chat record
@@ -157,8 +154,12 @@ const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
       console.log('New chat created:', newChat);
       return newChat.id;
     } catch (error) {
-      console.error('Error in createNewChat:', error);
-      return null;
+      console.error('Error in handleChat:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to start chat',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -174,6 +175,62 @@ const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
       return null;
     }
     return newChat.id;
+  };
+  const handleChat = async () => {
+    try {
+      // Only check subscription for non-AI lawyers
+      if (!lawyer.isAI) {
+        const { allowed, remaining, existing } =
+          await checkLawyerChatInitiation(session.user.id, lawyer.user_id);
+
+        if (!allowed && !existing) {
+          toast({
+            title: 'Subscription Limit Reached',
+            description:
+              'You have reached your limit for lawyer conversations. Please upgrade your plan to chat with more lawyers.',
+            variant: 'destructive',
+          });
+          router.push('/profile/billing');
+          return;
+        }
+
+        // Show warning if approaching limit
+        if (!existing && remaining <= 1) {
+          toast({
+            title: 'Almost at Limit',
+            description: `You can only start chat with ${remaining} more lawyer${
+              remaining === 1 ? '' : 's'
+            } on your current plan.`,
+            variant: 'warning',
+          });
+        }
+      }
+
+      // Continue with existing chat logic
+      const chatId = await checkExistingChat();
+
+      if (lawyer.isAI && chatId) {
+        console.log('AI chat already exists');
+        router.push(`/chats/ai/${chatId}`);
+      } else if (lawyer.isAI) {
+        console.log('Creating new AI chat');
+        const newChatId = await createNewAIChat();
+        router.push(`/chats/ai/${newChatId}`);
+      } else if (chatId) {
+        console.log('Chat already exists');
+        router.push(`/chats/${chatId}`);
+      } else {
+        const newChatId = await createNewChat();
+        router.push(`/chats/${newChatId}`);
+      }
+    } catch (error) {
+      console.error('Error in handleChat:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to start chat',
+        variant: 'destructive',
+      });
+    }
   };
 
   // Function to handle specializations display
@@ -220,14 +277,14 @@ const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
       className={cn('max-w-md p-6 transition-shadow cursor-pointer', {
         'hover:shadow-md': enableButtons,
       })}
-      onClick={(e) => {
-        // Only navigate if the click was directly on the card
-        if (e.target === e.currentTarget || e.target.closest('.card-content')) {
-          lawyer.isAI
-            ? router.push('/lawyers/0')
-            : router.push(`/lawyers/${lawyer.id}`);
-        }
-      }}
+      // onClick={(e) => {
+      //   // Only navigate if the click was directly on the card
+      //   if (e.target === e.currentTarget || e.target.closest('.card-content')) {
+      //     lawyer.isAI
+      //       ? router.push('/lawyers/0')
+      //       : router.push(`/lawyers/${lawyer.id}`);
+      //   }
+      // }}
     >
       <div className='flex items-start gap-4 card-content'>
         <div className='relative w-12 h-12 overflow-hidden bg-gray-100 rounded-full card-content'>
@@ -329,12 +386,21 @@ const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
             <div className='flex gap-2 mt-6'>
               <Button
                 onClick={(e) => {
-                  e.stopPropagation(); // Stop event bubbling
-                  handleChat();
+                  e.stopPropagation();
+                  if (!canChat && !lawyer.isAI) {
+                    router.push('/profile/billing');
+                  } else {
+                    handleChat();
+                  }
                 }}
-                className='gap-2 '
+                disabled={isLoading}
+                className='gap-2'
               >
-                {lawyer.isAI ? (
+                {isLoading ? (
+                  'Starting Chat...'
+                ) : !canChat && !lawyer.isAI ? (
+                  'Upgrade to Chat'
+                ) : lawyer.isAI ? (
                   <>
                     <Bot className='w-4 h-4' />
                     Start AI Consultation

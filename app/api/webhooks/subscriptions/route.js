@@ -14,7 +14,7 @@ async function updateUserSubscriptionInDatabase(userId, newPlan) {
   await supabase
     .from('users')
     .update({ subscription_status: newPlan })
-    .eq('id', userId);
+    .eq('stripe_customer_id', userId);
 
   console.log(`Updating user ${userId} to plan: ${newPlan}`);
 }
@@ -53,37 +53,40 @@ export async function POST(request) {
         { status: 400 }
       );
     }
+    console.log('EVENT HOOK DETAILS ', event);
 
     // Handle subscription events
     switch (event.type) {
       case 'customer.subscription.created': {
         const subscriptionCreated = event.data.object;
-        console.log('subscriptionCreated', subscriptionCreated);
+        // console.log('subscriptionCreated', subscriptionCreated);
         break;
       }
       case 'customer.subscription.updated': {
         const subscriptionUpdated = event.data.object;
-        const updatedUserId = subscriptionUpdated.metadata?.userId;
+        const updatedUserCustomerId = subscriptionUpdated.customer;
         const updatedSubscriptionId = subscriptionUpdated.id;
         const currentPlan = subscriptionUpdated.items.data[0].price.id;
         const subscriptionStatus = subscriptionUpdated.status;
 
-        if (!updatedUserId) {
-          console.error('User ID missing in metadata');
+        if (!updatedUserCustomerId) {
+          console.error('Customer ID missing in metadata');
           break;
         }
 
         try {
           if (subscriptionStatus === 'active') {
             await updateUserSubscriptionInDatabase(
-              updatedUserId,
+              updatedUserCustomerId,
 
               currentPlan
             );
-            console.log(`User ${updatedUserId} upgraded to ${currentPlan}`);
+            console.log(
+              `User ${updatedUserCustomerId} upgraded to ${currentPlan}`
+            );
           } else {
             console.log(
-              `User ${updatedUserId} subscription updated but not active (${subscriptionStatus})`
+              `User ${updatedUserCustomerId} subscription updated but not active (${subscriptionStatus})`
             );
           }
         } catch (error) {
@@ -93,12 +96,12 @@ export async function POST(request) {
       }
       case 'customer.subscription.deleted': {
         const subscriptionDeleted = event.data.object;
-        const deletedUserId = subscriptionDeleted.metadata?.userId;
-        console.log('subscriptionDeleted', subscriptionDeleted);
+        const deletedUserCustomerId = subscriptionDeleted?.customer;
+        //  console.log('subscriptionDeleted', subscriptionDeleted);
         try {
-          await downgradeUserPlan(deletedUserId, 'free');
+          await downgradeUserPlan(deletedUserCustomerId, 'free');
           console.log(
-            `User ${deletedUserId} downgraded to free after subscription ended.`
+            `User ${deletedUserCustomerId} downgraded to free after subscription ended.`
           );
         } catch (error) {
           console.error('Error downgrading user:', error);
@@ -107,7 +110,7 @@ export async function POST(request) {
       }
       case 'invoice.payment_succeeded': {
         const invoicePaymentSucceeded = event.data.object;
-        console.log('invoicePaymentSucceeded', invoicePaymentSucceeded);
+        // console.log('invoicePaymentSucceeded', invoicePaymentSucceeded);
 
         // Check if subscription ID exists
         if (!invoicePaymentSucceeded.subscription) {
@@ -159,16 +162,18 @@ export async function POST(request) {
             invoicePaymentFailed.subscription
           );
 
-          const failedUserId = subscription.metadata?.userId;
+          const failedUserCustomerId = subscription?.customer;
           const currentPlan = subscription.items.data[0].price.id;
 
-          if (!failedUserId) {
-            console.error('User ID missing in metadata');
+          if (!failedUserCustomerId) {
+            console.error('Customer ID missing in metadata');
             break;
           }
 
-          await downgradeUserPlan(failedUserId, 'free');
-          console.log(`Downgraded user ${failedUserId} due to failed payment`);
+          await downgradeUserPlan(failedUserCustomerId, 'free');
+          console.log(
+            `Downgraded user ${failedUserCustomerId} due to failed payment`
+          );
         } catch (error) {
           console.error('Error processing invoice payment failed:', error);
         }
@@ -180,7 +185,7 @@ export async function POST(request) {
 
     const data = event.data.object;
     const metadata = data.metadata || {};
-    const eventUserId = metadata.userId;
+    const eventUserCustomerId = metadata.userId;
     const eventSubscriptionId = data.id;
     const eventStatus = data.status;
     const created = data.created;
@@ -188,7 +193,7 @@ export async function POST(request) {
     const amount = data.amount_due || data.amount_total;
 
     const subscriptionDetails = {
-      userId: eventUserId,
+      userId: eventUserCustomerId,
       subscriptionId: eventSubscriptionId,
       status: eventStatus,
       created,

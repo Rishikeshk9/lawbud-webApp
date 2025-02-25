@@ -51,6 +51,8 @@ export async function POST(request) {
         .from('users')
         .update({ stripe_customer_id: stripeCustomer.id })
         .eq('id', user.id);
+    } else {
+      stripeCustomer = await stripe.customers.retrieve(user.stripe_customer_id);
     }
 
     const data = await request.json();
