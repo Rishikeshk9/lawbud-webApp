@@ -19,6 +19,7 @@ export default function RegisterPage() {
     phone: '',
   });
   const [errors, setErrors] = useState({});
+  let stripeCustomer;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,6 +68,17 @@ export default function RegisterPage() {
 
       if (profileError) throw profileError;
 
+      // Create Stripe customer with user ID
+      stripeCustomer = await stripe.customers.create({
+        email: formData.email,
+        name: formData.name,
+        phone: formData.phone,
+        metadata: {
+          role: 'USER',
+          userId: authData.user.id, // Add user ID to metadata
+        },
+      });
+
       toast({
         title: 'Registration Successful',
         description: 'Please check your email to verify your account.',
@@ -80,6 +92,9 @@ export default function RegisterPage() {
         description: error.message,
         variant: 'destructive',
       });
+      if (stripeCustomer?.id) {
+        await stripe.customers.del(stripeCustomer.id);
+      }
     } finally {
       setIsLoading(false);
     }

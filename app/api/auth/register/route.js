@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import Stripe from 'stripe';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export async function POST(req) {
   try {
@@ -21,7 +24,7 @@ export async function POST(req) {
     const degreeCertificate = formData.get('degreeCertificate');
     const barMembershipCertificate = formData.get('barMembershipCertificate');
 
-    let degreeUpload, barUpload;
+    let degreeUpload, barUpload, stripeCustomer;
 
     try {
       // Upload certificates to storage first
@@ -45,7 +48,7 @@ export async function POST(req) {
       if (barUpload.error)
         throw new Error('Failed to upload bar membership certificate');
 
-      // Map the role to the correct enum value (using lowercase as that's likely what's in the database)
+      // Map the role to the correct enum value
       const roleMap = {
         lawyer: 'LAWYER',
         user: 'USER',
@@ -68,10 +71,21 @@ export async function POST(req) {
             },
           },
         });
-      console.log(authData);
-      console.log(authError);
-      if (authError)
+
+      if (authError) {
         throw new Error(`Failed to create user account: ${authError}`);
+      }
+
+      // Create Stripe customer with user ID
+      stripeCustomer = await stripe.customers.create({
+        email,
+        name,
+        phone,
+        metadata: {
+          role: normalizedRole,
+          userId: authData.user.id, // Add user ID to metadata
+        },
+      });
 
       // Use single query transaction for database operations
       const { data, error: transactionError } = await supabaseAdmin.rpc(
@@ -90,10 +104,15 @@ export async function POST(req) {
           p_degree_url: degreeUpload.data.path,
           p_bar_url: barUpload.data.path,
           p_specializations: specializations,
+          p_stripe_customer_id: stripeCustomer.id,
         }
       );
 
-      if (transactionError) throw transactionError;
+      if (transactionError) {
+        // Clean up Stripe customer if transaction fails
+        await stripe.customers.del(stripeCustomer.id);
+        throw transactionError;
+      }
 
       return NextResponse.json({
         message: 'Registration successful',
@@ -110,6 +129,10 @@ export async function POST(req) {
         await supabaseAdmin.storage
           .from('certificates')
           .remove([barUpload.data.path]);
+      }
+      // Clean up Stripe customer if it exists
+      if (stripeCustomer?.id) {
+        await stripe.customers.del(stripeCustomer.id);
       }
       throw error;
     }

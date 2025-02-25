@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export async function POST(request) {
+  let stripeCustomer;
   try {
     // Get authenticated user from Supabase
     const authHeader = request.headers.get('authorization');
@@ -37,11 +38,27 @@ export async function POST(request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
+    // Step 1: Create Stripe Customer if missing
+    if (!user.stripe_customer_id) {
+      stripeCustomer = await stripe.customers.create({
+        email: user.email,
+        name: user.name,
+        phone: user.phone,
+        metadata: { userId: user.id, role: user.role },
+      });
+
+      await supabase
+        .from('users')
+        .update({ stripe_customer_id: stripeCustomer.id })
+        .eq('id', user.id);
+    }
+
     const data = await request.json();
-    console.log('data', data);
+
     const priceId = data.priceId;
 
     const checkoutSession = await stripe.checkout.sessions.create({
+      customer: stripeCustomer.id,
       payment_method_types: ['card'],
       line_items: [
         {
@@ -50,18 +67,20 @@ export async function POST(request) {
         },
       ],
       mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/profile/billing?success=true`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/profile/billing?success=true&priceId=${priceId}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/profile/billing?error=true`,
       metadata: {
         userId: user.id,
         priceId,
       },
     });
-    console.log('checkoutSession', checkoutSession);
 
     return NextResponse.json({ result: checkoutSession, ok: true });
   } catch (error) {
     console.log(error);
+    if (stripeCustomer?.id) {
+      await stripe.customers.del(stripeCustomer.id);
+    }
     return new NextResponse('Internal Server', { status: 500 });
   }
 }
