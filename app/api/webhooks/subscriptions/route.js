@@ -39,7 +39,7 @@ async function downgradeUserPlan(userId, productId) {
 export async function POST(request) {
   try {
     const body = await request.text();
-    const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const endpointSecret = process.env.STRIPE_SUBSCRIPTION_WEBHOOK_SECRET;
     const headersList = await headers();
     const sig = headersList.get('stripe-signature');
     let event;
