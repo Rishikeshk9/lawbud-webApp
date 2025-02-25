@@ -94,7 +94,7 @@ export async function POST(request) {
       case 'customer.subscription.deleted': {
         const subscriptionDeleted = event.data.object;
         const deletedUserId = subscriptionDeleted.metadata?.userId;
-
+        console.log('subscriptionDeleted', subscriptionDeleted);
         try {
           await downgradeUserPlan(deletedUserId, 'free');
           console.log(
