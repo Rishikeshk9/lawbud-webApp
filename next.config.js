@@ -10,6 +10,18 @@ const nextConfig = {
       },
     ],
   },
+  rewrites: async () => {
+    return [
+      {
+        source: '/api/webhooks/subscriptions/',
+        destination: '/api/webhooks/subscriptions',
+      },
+      {
+        source: '/api/webhooks/checkout/',
+        destination: '/api/webhooks/checkout',
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

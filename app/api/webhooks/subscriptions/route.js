@@ -198,7 +198,7 @@ export async function POST(request) {
 
     try {
       console.log('subscriptionDetails', subscriptionDetails);
-      return NextResponse.json({ received: true });
+      return NextResponse.json({ received: true }, { status: 200 });
     } catch (error) {
       console.error('Database update failed:', error);
       return NextResponse.json(
