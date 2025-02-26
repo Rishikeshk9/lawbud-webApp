@@ -35,7 +35,7 @@ export default function SubscribePage() {
           description: 'Basic features for individuals',
           interval: 'month',
           features: [
-            'Access to AI Legal Assistant (30 queries/month)',
+            'Access to AI Legal Assistant (30 queries/day)',
             'Basic Document Templates',
             'Community Support',
           ],
