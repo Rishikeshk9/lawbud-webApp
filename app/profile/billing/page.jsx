@@ -11,6 +11,62 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import Link from 'next/link';
 import { Toaster } from '@/components/ui/toaster';
 
+function BillingPageSkeleton() {
+  return (
+    <div className='container max-w-4xl p-6 mx-auto'>
+      {/* Title Skeleton */}
+      <div className='h-9 mb-8 bg-gray-200 rounded-md w-60 animate-pulse' />
+
+      {/* Current Plan Card Skeleton */}
+      <Card className='p-6 mb-8'>
+        <div className='flex items-center justify-between mb-6'>
+          <div className='space-y-2'>
+            <div className='h-6 bg-gray-200 rounded-md w-32 animate-pulse' />
+            <div className='h-4 bg-gray-200 rounded-md w-48 animate-pulse' />
+          </div>
+          <div className='h-10 bg-gray-200 rounded-md w-40 animate-pulse' />
+        </div>
+
+        <div className='grid gap-4 md:grid-cols-3'>
+          {[1, 2, 3].map((i) => (
+            <div key={i}>
+              <div className='h-4 mb-2 bg-gray-200 rounded-md w-24 animate-pulse' />
+              <div className='h-6 bg-gray-200 rounded-md w-32 animate-pulse' />
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Payment History Skeleton */}
+      <div className='h-7 mb-4 bg-gray-200 rounded-md w-40 animate-pulse' />
+      <div className='overflow-x-auto'>
+        <table className='w-full'>
+          <thead>
+            <tr className='border-b'>
+              {['Date', 'Amount', 'Status', 'Invoice'].map((header) => (
+                <th key={header} className='px-6 py-3'>
+                  <div className='h-4 bg-gray-200 rounded-md w-20 animate-pulse' />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className='divide-y'>
+            {[1, 2, 3].map((i) => (
+              <tr key={i}>
+                {[1, 2, 3, 4].map((j) => (
+                  <td key={j} className='px-6 py-4'>
+                    <div className='h-4 bg-gray-200 rounded-md w-24 animate-pulse' />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function BillingPageContent() {
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState(null);
@@ -120,11 +176,7 @@ function BillingPageContent() {
   };
 
   if (loading) {
-    return (
-      <div className='flex items-center justify-center min-h-screen'>
-        <Loader2 className='w-8 h-8 animate-spin' />
-      </div>
-    );
+    return <BillingPageSkeleton />;
   }
 
   return (
@@ -252,17 +304,7 @@ function BillingPageContent() {
 
 export default function BillingPage() {
   return (
-    <Suspense
-      fallback={
-        <div className='container max-w-4xl p-6 mx-auto'>
-          <div className='animate-pulse'>
-            <div className='h-8 mb-8 bg-gray-200 rounded w-60' />
-            <div className='h-40 mb-6 bg-gray-200 rounded' />
-            <div className='bg-gray-200 rounded h-60' />
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<BillingPageSkeleton />}>
       <BillingPageContent />
     </Suspense>
   );

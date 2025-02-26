@@ -10,7 +10,7 @@ export default function ClientLayout({ children }) {
   const pathname = usePathname();
 
   // List of paths where both Navbar and BottomNav should be hidden
-  const noNavPaths = ['/login', '/register'];
+  const noNavPaths = ['/login', '/register', '/lawyer-registration'];
 
   // List of landing page paths where BottomNav should be hidden on mobile
   const landingPaths = ['/', '/about', '/privacy', '/terms'];

@@ -8,6 +8,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { Scale } from 'lucide-react';
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,6 +20,7 @@ export default function RegisterPage() {
     email: '',
     phone: '',
   });
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [errors, setErrors] = useState({});
   let stripeCustomer;
 
@@ -30,6 +33,14 @@ export default function RegisterPage() {
 
     if (!formData.name) newErrors.name = 'Name is required';
     if (!formData.email) newErrors.email = 'Email is required';
+    if (!acceptedTerms) {
+      toast({
+        title: "Terms & Conditions Required",
+        description: "Please accept the Terms & Conditions to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     hasErrors = Object.keys(newErrors).length > 0;
     setErrors(newErrors);
@@ -117,27 +128,69 @@ export default function RegisterPage() {
             setErrors={setErrors}
           />
 
-          <Button type='submit' className='w-full' disabled={isLoading}>
+          <div className="flex items-start space-x-2">
+            <Checkbox 
+              id="terms" 
+              checked={acceptedTerms}
+              onCheckedChange={setAcceptedTerms}
+              className="mt-1"
+            />
+            <div className="grid gap-1.5 leading-none">
+              <label
+                htmlFor="terms"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Accept terms and conditions
+              </label>
+              <p className="text-sm text-muted-foreground">
+                By creating an account, you agree to our{' '}
+                <Link href="/terms" className="underline underline-offset-4 hover:text-primary">
+                  Terms of Service
+                </Link>{' '}
+                and{' '}
+                <Link href="/privacy" className="underline underline-offset-4 hover:text-primary">
+                  Privacy Policy
+                </Link>
+                .
+              </p>
+            </div>
+          </div>
+
+          <Button 
+            type='submit' 
+            className='w-full' 
+            disabled={isLoading || !acceptedTerms}
+          >
             {isLoading ? 'Processing...' : 'Create Account'}
           </Button>
         </form>
 
-        <div className='space-y-2 text-center'>
+        <div className='space-y-4 text-center'>
           <p className='text-sm text-gray-500'>
             Already have an account?{' '}
             <Link href='/login' className='text-primary hover:underline'>
               Login
             </Link>
           </p>
-          <p className='text-sm text-gray-500'>
-            Are you a lawyer?{' '}
+          
+          <div className='relative'>
+            <div className='absolute inset-0 flex items-center'>
+              <span className='w-full border-t' />
+            </div>
+            <div className='relative flex justify-center text-xs uppercase'>
+              <span className='bg-background px-2 text-muted-foreground'>Or</span>
+            </div>
+          </div>
+
+          <div className='inline-block'>
             <Link
               href='/lawyer-registration'
-              className='text-primary hover:underline'
+              className='flex items-center justify-center gap-2 px-6 py-3 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors'
             >
+              <Scale className='w-4 h-4' />
               Register as a Lawyer
             </Link>
-          </p>
+          </div>
         </div>
       </Card>
     </div>

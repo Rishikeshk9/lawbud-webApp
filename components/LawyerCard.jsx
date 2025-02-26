@@ -21,11 +21,24 @@ import {
   Heart,
   HeartCrack,
   HeartOff,
+  BadgeCheck,
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { checkLawyerChatInitiation } from '@/lib/subscription';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
+// Add this CSS at the top of your file or in your globals.css
+const aiCardStyles = {
+  background: 'linear-gradient(to right bottom, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85))',
+  backdropFilter: 'blur(10px)',
+};
 
 const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
   const router = useRouter();
@@ -274,46 +287,66 @@ const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
   return (
     <Card
       key={lawyer.id}
-      className={cn('max-w-md p-6 transition-shadow cursor-pointer', {
-        'hover:shadow-md': enableButtons,
+      className={cn('transition-all border-2 border-transparent  relative', {
+        'max-w-md p-6 hover:border-2  hover:shadow-md': !lawyer.isAI,
+        'w-full  max-h-max p-1 ai-card before:absolute before:inset-0 before:p-[1px] before:bg-gradient-to-r before:from-indigo-500 before:via-purple-500 before:to-pink-500 before:rounded-xl before:content-[""] before:animate-gradient-rotate overflow-hidden': lawyer.isAI,
       })}
-      // onClick={(e) => {
-      //   // Only navigate if the click was directly on the card
-      //   if (e.target === e.currentTarget || e.target.closest('.card-content')) {
-      //     lawyer.isAI
-      //       ? router.push('/lawyers/0')
-      //       : router.push(`/lawyers/${lawyer.id}`);
-      //   }
-      // }}
+      style={lawyer.isAI ? aiCardStyles : {}}
     >
-      <div className='flex items-start gap-4 card-content'>
-        <div className='relative w-12 h-12 overflow-hidden bg-gray-100 rounded-full card-content'>
-          {lawyer.isAI ? (
-            <div className='flex items-center justify-center w-full h-full text-lg font-medium text-gray-400 card-content'>
-              <Bot className='w-6 h-6' />
-            </div>
-          ) : lawyer.avatar_url ? (
-            <Image
-              src={lawyer.avatar_url}
-              alt={lawyer.name || 'Lawyer picture'}
-              fill
-              className='object-cover card-content'
-              sizes='96px'
-            />
-          ) : (
-            <div className='flex items-center justify-center w-full h-full text-lg font-medium text-gray-400 card-content'>
-              {lawyer.name
-                ?.split(' ')
-                .map((n) => n[0])
-                .join('')
-                .slice(0, 1)}
-            </div>
+      {lawyer.isAI && (
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-100/20 via-purple-100/20 to-pink-100/20 animate-gradient blur-lg" />
+      )}
+      <div className={cn(
+        'flex items-start gap-3 card-content relative',
+        { 'bg-black/5   p-2 backdrop-blur-md text-white': lawyer.isAI }
+      )}>
+        <div className={cn('relative card-content', {
+          'w-12 h-12': !lawyer.isAI,
+          'w-10 h-10': lawyer.isAI
+        })}>
+          <div className='relative w-full h-full overflow-hidden bg-gray-100 rounded-full'>
+            {lawyer.isAI ? (
+              <div className='flex items-center justify-center w-full h-full text-lg font-medium bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500'>
+                <Bot className='w-5 h-5 text-white' />
+              </div>
+            ) : lawyer.avatar_url ? (
+              <div className="relative w-full h-full">
+                <Image
+                  src={lawyer.avatar_url}
+                  alt={lawyer.name || 'Lawyer picture'}
+                  fill
+                  className='object-cover rounded-full card-content'
+                  sizes='96px'
+                />
+              </div>
+            ) : (
+              <div className='flex items-center justify-center w-full h-full text-lg font-medium text-gray-400 card-content'>
+                {lawyer.name?.split(' ').map((n) => n[0]).join('').slice(0, 1)} 
+              </div>
+            )}
+          </div>
+          {!lawyer.isAI && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="absolute bottom-0 -right-1 bg-transparent rounded-full">
+                    <BadgeCheck className="h-5 w-5 text-white fill-blue-500" />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Verified Lawyer</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
-        <div className='flex-1 card-content'>
+
+        <div className='flex-1 min-w-0 card-content'>
           <div className='flex items-center justify-between mb-2 card-content'>
-            <h3 className='text-lg font-semibold card-content '>
-              {lawyer.name}
+            <h3 className={cn('text-lg font-semibold truncate card-content', {
+              '  text-white': lawyer.isAI
+            })}>
+              {lawyer.isAI && `${lawyer.name} ✨`}
             </h3>
             {!lawyer.isAI && enableButtons && (
               <Button
@@ -345,8 +378,8 @@ const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
           </div>
 
           {lawyer.isAI ? (
-            <p className='text-sm text-muted-foreground card-content'>
-              Get instant legal guidance 24/7
+            <p className='text-sm text-muted-foreground card-content mb-3'>
+              Get instant legal guidance powered by AI, available 24/7
             </p>
           ) : (
             <>
@@ -365,7 +398,7 @@ const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
                   </Badge>
                 )}
               </div>
-              <div className='space-y-2 card-content'>
+              <div className='space-y-1.5 card-content'>
                 <div className='flex items-center text-sm card-content'>
                   <MapPin className='w-4 h-4 mr-1' />
                   <span className='card-content text-black/50'>
@@ -383,7 +416,7 @@ const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
           )}
 
           {enableButtons && (
-            <div className='flex gap-2 mt-6'>
+            <div className='flex gap-2 mt-3'>
               <Button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -394,7 +427,9 @@ const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
                   }
                 }}
                 disabled={isLoading}
-                className='gap-2'
+                className={cn('gap-2 w-full justify-center', {
+                  'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white': lawyer.isAI
+                })}
               >
                 {isLoading ? (
                   'Starting Chat...'

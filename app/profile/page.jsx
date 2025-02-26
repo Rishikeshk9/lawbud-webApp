@@ -20,6 +20,7 @@ import {
   MessageCircle,
   Heart,
   Loader2,
+  Crown,
 } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
 import { useLawyers } from '../contexts/LawyersContext';
@@ -29,6 +30,32 @@ import { supabase } from '@/lib/supabase';
 import LawyerCard from '@/components/LawyerCard';
 import { ProfilePictureUpload } from '@/components/ProfilePictureUpload';
 import { Skeleton } from '@/components/ui/skeleton';
+import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
+
+function PlanBadge({ plan }) {
+  if (!plan) return null;
+
+  const getBadgeStyles = (planName) => {
+    switch (planName?.toLowerCase()) {
+      case 'premium':
+        return 'bg-gradient-to-r from-amber-400 to-yellow-600 text-white';
+      case 'pro':
+        return 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white';
+      case 'basic':
+        return 'bg-gradient-to-r from-blue-400 to-blue-600 text-white';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  return (
+    <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getBadgeStyles(plan)}`}>
+      <Crown className="w-4 h-4 mr-1" />
+      {plan || 'Free'}
+    </div>
+  );
+}
 
 export default function ProfilePage() {
   const { user } = useUser();
@@ -38,6 +65,7 @@ export default function ProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [userMetadata, setUserMetadata] = useState(null);
   const [isSaved, setIsSaved] = useState(false);
+  const [subscription, setSubscription] = useState(null);
 
   useEffect(() => {
     async function loadProfile() {
@@ -45,12 +73,25 @@ export default function ProfilePage() {
         const { data: session } = await supabase.auth.getSession();
         if (!session?.session?.user) return;
 
-        //get user details from user table
+        // Fetch user details
         const { data: user, error } = await supabase
           .from('users')
           .select('*')
           .eq('email', session.session.user.email)
           .single();
+
+        // Fetch subscription details
+        const response = await fetch('/api/billing/subscription', {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.session.access_token}`,
+          },
+        });
+        
+        if (response.ok) {
+          const billingData = await response.json();
+          setSubscription(billingData.subscription);
+        }
 
         console.log(user);
         console.log(session.session.user.user_metadata);
@@ -91,7 +132,12 @@ export default function ProfilePage() {
 
   return (
     <div className='container p-4 mx-auto'>
-      <Card className='w-full p-6 mb-6 md:max-w-max'>
+      <Card className='w-full p-6 mb-6 md:max-w-max relative'>
+        <div className='absolute top-4 right-4'>
+          <Link href='/profile/billing'>
+            <PlanBadge plan={subscription?.plan?.product?.name} />
+          </Link>
+        </div>
         <div className='flex flex-col items-start gap-6 md:flex-row'>
           <ProfilePictureUpload
             user={profile}

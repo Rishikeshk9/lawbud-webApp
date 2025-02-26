@@ -40,6 +40,7 @@ export default function LawyerRegistrationPage() {
   const [states, setStates] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [selectedState, setSelectedState] = useState(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(lawyerRegistrationSchema),
@@ -77,18 +78,33 @@ export default function LawyerRegistrationPage() {
     //  console.log(form.getValues());
   }, [form.getValues()]);
 
-  async function onSubmit(data) {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Validate form data
+    let hasErrors = false;
+    let newErrors = {};
+
+    if (!acceptedTerms) {
+      toast({
+        title: "Terms & Conditions Required",
+        description: "Please accept the Terms & Conditions to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       setIsLoading(true);
       const formData = new FormData();
 
-      Object.keys(data).forEach((key) => {
+      Object.keys(form.getValues()).forEach((key) => {
         if (key === 'specializations') {
-          formData.append(key, JSON.stringify(data[key]));
+          formData.append(key, JSON.stringify(form.getValues()[key]));
         } else if (key === 'role') {
           formData.append(key, 'lawyer');
         } else {
-          formData.append(key, data[key]);
+          formData.append(key, form.getValues()[key]);
         }
       });
 
@@ -117,7 +133,7 @@ export default function LawyerRegistrationPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className='min-h-screen flex items-center justify-center p-4 bg-gray-50'>
@@ -129,7 +145,7 @@ export default function LawyerRegistrationPage() {
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
+          <form onSubmit={handleSubmit} className='space-y-6'>
             <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
               <FormField
                 control={form.control}
@@ -478,7 +494,39 @@ export default function LawyerRegistrationPage() {
               )}
             />
 
-            <Button type='submit' className='w-full' disabled={isLoading}>
+            <div className="flex items-start space-x-2">
+              <Checkbox 
+                id="terms" 
+                checked={acceptedTerms}
+                onCheckedChange={setAcceptedTerms}
+                className="mt-1"
+              />
+              <div className="grid gap-1.5 leading-none">
+                <label
+                  htmlFor="terms"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Accept terms and conditions
+                </label>
+                <p className="text-sm text-muted-foreground">
+                  By registering as a lawyer, you agree to our{' '}
+                  <Link href="/terms" className="underline underline-offset-4 hover:text-primary">
+                    Terms of Service
+                  </Link>
+                  ,{' '}
+                  <Link href="/privacy" className="underline underline-offset-4 hover:text-primary">
+                    Privacy Policy
+                  </Link>
+                  , and{' '}
+                  <Link href="/lawyer-terms" className="underline underline-offset-4 hover:text-primary">
+                    Lawyer Agreement
+                  </Link>
+                  .
+                </p>
+              </div>
+            </div>
+
+            <Button type='submit' className='w-full' disabled={isLoading || !acceptedTerms}>
               {isLoading ? 'Submitting...' : 'Submit Registration'}
             </Button>
           </form>

@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { getStates, getDistricts } from '@/lib/location-data';
 import { useAuth } from './AuthContext';
@@ -9,13 +9,75 @@ const LawyersContext = createContext();
 
 export function LawyersProvider({ children }) {
   const [lawyers, setLawyers] = useState([]);
+  const [savedLawyers, setSavedLawyers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const { session } = useAuth();
-  const [savedLawyers, setSavedLawyers] = useState([]);
+
+  const fetchLawyers = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const { data: lawyersData, error } = await supabase
+        .from('lawyers')
+        .select(`
+          *,
+          user:users!inner(
+            id,
+            name,
+            email,
+            phone,
+            avatar_url,
+            role
+          ),
+          specializations:lawyer_specializations(
+            specializations(name)
+          )
+        `)
+        .eq('verification_status', 'approved') 
+        .eq('user.role', 'LAWYER');
+
+      if (error) throw error;
+
+      // Transform the data to include user details and add AI lawyer
+      const transformedLawyers = lawyersData.map(lawyer => ({
+        ...lawyer,
+        name: lawyer.user.name,
+        email: lawyer.user.email,
+        phone: lawyer.user.phone,
+        avatar_url: lawyer.user.avatar_url,
+        role: lawyer.user.role,
+        state: getStates(lawyer.state_id),
+        district: getDistricts(lawyer.state_id, lawyer.district_id),
+        yearsOfExperience: lawyer.experience || 0,
+        specializations: lawyer.specializations?.map(s => s.specializations.name) || []
+      }));
+
+      // Add AI Lawyer card
+      const aiLawyer = {
+        id: '0',
+        name: 'AI Legal Assistant',
+        specialization: 'All Legal Matters',
+        experience: 'Available 24/7',
+        location: 'Online',
+        rating: 5.0,
+        reviews: [],
+        isAI: true,
+        yearsOfExperience: 0,
+        specializations: ['All Legal Matters']
+      };
+
+      setLawyers([aiLawyer, ...transformedLawyers]);
+    } catch (error) {
+      console.error('Error fetching lawyers:', error);
+      setError(error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     fetchLawyers();
-  }, [session?.user?.id]);
+  }, [session?.user?.id, fetchLawyers]);
 
   useEffect(() => {
     fetchSavedLawyers();
@@ -38,73 +100,6 @@ export function LawyersProvider({ children }) {
         savedLawyers.some((saved) => saved.lawyer_id === lawyer.id)
       )
     );
-  };
-
-  const fetchLawyers = async () => {
-    try {
-      setIsLoading(true);
-
-      const { data: lawyersData, error } = await supabase
-        .from('lawyers')
-        .select(
-          `
-          *,
-          users (
-            name,
-            email,
-            phone,
-            avatar_url
-          ),
-          lawyer_specializations (
-            specializations (
-              name
-            )
-          )
-        `
-        )
-        .eq('verification_status', 'approved');
-
-      if (error) throw error;
-
-      // Format the lawyers data
-      const formattedLawyers = lawyersData.map((lawyer) => ({
-        id: lawyer.id,
-        avatar_url: lawyer.users.avatar_url,
-        name: lawyer.users.name,
-        email: lawyer.users.email,
-        phone: lawyer.users.phone,
-        user_id: lawyer.user_id,
-        specializations: lawyer.lawyer_specializations.map(
-          (spec) => spec.specializations.name
-        ),
-        experience: lawyer.experience,
-        state: getStates(lawyer.state_id),
-        district: getDistricts(lawyer.state_id, lawyer.district_id),
-        languages: lawyer.languages,
-        rating: 4.5, // Default rating until we implement reviews
-        reviews: [], // Placeholder until we implement reviews
-        isAI: false,
-      }));
-
-      // Add AI Lawyer card
-      const aiLawyer = {
-        id: '0',
-        name: 'AI Legal Assistant',
-        specialization: 'All Legal Matters',
-        experience: 'Available 24/7',
-        location: 'Online',
-        rating: 5.0,
-        reviews: [],
-        isAI: true,
-      };
-
-      setLawyers([aiLawyer, ...formattedLawyers]);
-    } catch (err) {
-      console.error('Error fetching lawyers:', err);
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const saveLawyer = async (lawyerId) => {
@@ -135,8 +130,7 @@ export function LawyersProvider({ children }) {
       .select('*')
       .eq('lawyer_id', lawyerId)
       .eq('user_id', session?.user?.id)
-      .limit(1);
-    console.log(savedLawyers);
+      .limit(1); 
     return savedLawyers.length > 0;
   };
 

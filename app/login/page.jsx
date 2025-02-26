@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -10,14 +10,26 @@ import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Cookies from 'js-cookie';
+import { Scale } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showOtpInput, setShowOtpInput] = useState(false);
+  const [canResend, setCanResend] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
+
+  useEffect(() => {
+    let timer;
+    if (showOtpInput) {
+      timer = setTimeout(() => {
+        setCanResend(true);
+      }, 120000); // 2 minutes
+    }
+    return () => clearTimeout(timer);
+  }, [showOtpInput]);
 
   const handleSendOTP = async (e) => {
     e.preventDefault();
@@ -25,6 +37,7 @@ export default function LoginPage() {
 
     try {
       setIsLoading(true);
+      setCanResend(false);
 
       // First verify if user exists
       const response = await fetch('/api/auth/verify', {
@@ -150,6 +163,17 @@ export default function LoginPage() {
                   disabled={isLoading}
                   required
                 />
+                {canResend && (
+                  <Button
+                    type='button'
+                    variant="outline"
+                    className='w-full mt-2'
+                    onClick={handleSendOTP}
+                    disabled={isLoading}
+                  >
+                    Resend Code
+                  </Button>
+                )}
               </div>
             )}
 
@@ -169,13 +193,32 @@ export default function LoginPage() {
           </div>
         </form>
 
-        <div className='space-y-2 text-center'>
-          <p className='text-sm text-gray-500'>
-            Don&apos;t have an account?{' '}
-            <Link href='/register' className='text-primary hover:underline'>
-              Register
+        <div className='space-y-4 text-center'>
+          <div className='relative'>
+            <div className='absolute inset-0 flex items-center'>
+              <span className='w-full border-t' />
+            </div>
+            <div className='relative flex justify-center text-xs uppercase'>
+              <span className='bg-background px-2 text-muted-foreground'>New to LawBud?</span>
+            </div>
+          </div>
+
+          <div className='space-y-2'>
+            <Link
+              href='/register'
+              className='inline-flex items-center justify-center w-full gap-2 px-6 py-3 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition-colors'
+            >
+              Create an Account
             </Link>
-          </p>
+            
+            <Link
+              href='/lawyer-registration'
+              className='inline-flex items-center justify-center w-full gap-2 px-6 py-3 text-sm font-medium border border-black text-black rounded-lg hover:bg-gray-100 transition-colors'
+            >
+              <Scale className='w-4 h-4' />
+              Register as a Lawyer
+            </Link>
+          </div>
         </div>
       </Card>
     </div>
