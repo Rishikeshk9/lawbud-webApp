@@ -52,9 +52,7 @@ export default function ChatPage() {
         if (receiverError && receiverError.code !== 'PGRST116') {
           console.error('Error checking receiver status:', receiverError);
         }
-        setReceiver(receiverData);
-        console.log(receiverData);
-
+        setReceiver(receiverData); 
         // Always fetch current user as sender
         const { data: senderData, error: senderError } = await supabase
           .from('users')

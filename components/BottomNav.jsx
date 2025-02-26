@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   {
     label: 'Home',
-    href: '/',
+    href: '/lawyers',
     icon: Home,
   },
   // {
@@ -43,7 +43,7 @@ export function BottomNav() {
 
   return (
     <div className='fixed bottom-0 left-0 right-0 z-50 bg-white border-t '>
-      <nav className='flex justify-around p-2'>
+      <nav className='flex justify-around max-w-md mx-auto'>
         {navItems.map((item) => {
           const Icon = item.icon;
           return (

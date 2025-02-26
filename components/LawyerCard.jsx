@@ -287,18 +287,18 @@ const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
   return (
     <Card
       key={lawyer.id}
-      className={cn('transition-all border-2 border-transparent  relative', {
-        'max-w-md p-6 hover:border-2  hover:shadow-md': !lawyer.isAI,
-        'w-full  max-h-max p-1 ai-card before:absolute before:inset-0 before:p-[1px] before:bg-gradient-to-r before:from-indigo-500 before:via-purple-500 before:to-pink-500 before:rounded-xl before:content-[""] before:animate-gradient-rotate overflow-hidden': lawyer.isAI,
+      className={cn('transition-all border-b-2 border-x-0 border-t-0 border-gray-100 shadow-none  relative', {
+        'max-w-md p-6 hover:border-b-2   hover:shadow-md ': !lawyer.isAI,
+        'w-full  max-h-max   ai-card before:absolute before:inset-0   before:bg-gradient-to-r before:from-indigo-500 before:via-purple-500 before:to-pink-500 before:rounded-xl before:content-[""] before:animate-gradient-rotate overflow-hidden': lawyer.isAI,
       })}
       style={lawyer.isAI ? aiCardStyles : {}}
     >
       {lawyer.isAI && (
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-100/20 via-purple-100/20 to-pink-100/20 animate-gradient blur-lg" />
+        <div className="absolute   inset-0 bg-gradient-to-r from-blue-100/20 via-purple-100/20 to-pink-100/20 animate-gradient blur-lg" />
       )}
       <div className={cn(
         'flex items-start gap-3 card-content relative',
-        { 'bg-black/5   p-2 backdrop-blur-md text-white': lawyer.isAI }
+        { 'bg-black/5   p-4 backdrop-blur-md text-white': lawyer.isAI }
       )}>
         <div className={cn('relative card-content', {
           'w-12 h-12': !lawyer.isAI,
@@ -346,7 +346,7 @@ const LawyerCard = memo(function LawyerCard({ lawyer, enableButtons }) {
             <h3 className={cn('text-lg font-semibold truncate card-content', {
               '  text-white': lawyer.isAI
             })}>
-              {lawyer.isAI && `${lawyer.name} ✨`}
+              {lawyer.isAI ? `${lawyer.name} ✨` : lawyer.name}
             </h3>
             {!lawyer.isAI && enableButtons && (
               <Button

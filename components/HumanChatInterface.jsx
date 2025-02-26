@@ -31,7 +31,7 @@ export function HumanChatInterface({ isLoading, chat, sender, receiver }) {
     const initialize = async () => {
       try {
         fetchMessages(chat.id);
-        console.log(chat.id);
+       
         // Set up real-time subscription after chat is initialized
         if (chat.id) {
           subscription = supabase
@@ -56,32 +56,28 @@ export function HumanChatInterface({ isLoading, chat, sender, receiver }) {
                   // Add new message
                   setMessages((current) => [...current, payload.new]);
                   scrollToBottom();
-                }
-                console.log(payload.new);
+                } 
               }
             )
             .subscribe();
         }
 
         let otherUser;
-        if (receiver.role === 'LAWYER') {
-          console.log('CHATTING with lawyer');
+        if (receiver.role === 'LAWYER') { 
           const { data } = await supabase
             .from('lawyers')
             .select('*')
             .eq('user_id', receiver.id)
             .single();
           otherUser = data;
-        } else {
-          console.log('CHATTING with user');
+        } else { 
           const { data } = await supabase
             .from('users')
             .select('*')
             .eq('id', receiver.id)
             .single();
           otherUser = data;
-        }
-        console.log(otherUser);
+        } 
         setOtherParty(otherUser);
       } catch (error) {
         console.error('Error in initialization:', error);
@@ -89,10 +85,7 @@ export function HumanChatInterface({ isLoading, chat, sender, receiver }) {
     };
 
     if (chat?.id && receiver?.id && session?.user?.id) {
-      initialize();
-      console.log(otherParty);
-      console.log(receiver);
-      console.log(sender);
+      initialize(); 
     }
 
     // Cleanup subscription on unmount or when chatId changes
@@ -135,7 +128,7 @@ export function HumanChatInterface({ isLoading, chat, sender, receiver }) {
     // - No chat ID is set (chat not initialized)
     // - Already processing a message send
     if (!input.trim() || !chat?.id || isLoading) return;
-    console.log(input);
+ 
 
     const messageContent = input.trim();
     setInput('');
@@ -196,8 +189,7 @@ export function HumanChatInterface({ isLoading, chat, sender, receiver }) {
     <div className='flex flex-col h-screen'>
       {/* Header */}
       <div
-        onClick={() => {
-          console.log(otherParty);
+        onClick={() => { 
           router.push(
             otherParty.role === 'USER'
               ? `/users/${otherParty.id}`

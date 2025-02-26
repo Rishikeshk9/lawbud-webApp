@@ -22,6 +22,7 @@ export function UserProvider({ children }) {
       console.log(users[0]);
       setUser(users[0]);
     } catch (err) {
+
       setError(err.message);
     } finally {
       setIsLoading(false);
@@ -29,7 +30,7 @@ export function UserProvider({ children }) {
   };
 
   useEffect(() => {
-    fetchUser(params.userId);
+   // fetchUser(params.userId);
   }, [params.userId]);
 
   // const saveUser = (userId) => {

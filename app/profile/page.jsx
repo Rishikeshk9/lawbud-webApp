@@ -93,8 +93,7 @@ export default function ProfilePage() {
           setSubscription(billingData.subscription);
         }
 
-        console.log(user);
-        console.log(session.session.user.user_metadata);
+       
         setProfile(user);
         setUserMetadata(session.session.user.user_metadata);
       } catch (error) {
@@ -111,9 +110,7 @@ export default function ProfilePage() {
     fetchSavedLawyers();
   }, [profile]);
 
-  useEffect(() => {
-    console.log(savedLawyers);
-  }, [savedLawyers]);
+  
 
   const handleProfilePictureUpdate = (newAvatarUrl) => {
     setProfile((prev) => ({

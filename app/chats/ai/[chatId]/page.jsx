@@ -48,8 +48,7 @@ export default function ChatPage() {
           console.error('Error checking receiver status:', receiverError);
         }
         setReceiver(receiverData);
-        console.log(receiverData);
-
+       
         // Always fetch current user as sender
         const { data: senderData, error: senderError } = await supabase
           .from('users')
@@ -82,8 +81,7 @@ export default function ChatPage() {
       </div>
     );
   }
-
-  console.log(receiver);
+ 
 
   if (receiver.isAI) {
     return <div>AI chat interface</div>; // TODO: add AI chat interface

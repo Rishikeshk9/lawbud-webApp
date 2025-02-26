@@ -16,10 +16,10 @@ import { VisuallyHidden } from '@/components/ui/visually-hidden';
 import { SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { checkFeatureAccess, incrementFeatureUsage } from '@/lib/subscription';
 
-export function AIChatInterface({ lawyer, userId }) {
+export function AIChatInterface({ lawyer, sender, receiver }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
@@ -62,7 +62,8 @@ export function AIChatInterface({ lawyer, userId }) {
   useEffect(() => {
     async function checkAccess() {
       try {
-        const { allowed } = await checkFeatureAccess(userId, 'ai_chat');
+       
+        const { allowed } = await checkFeatureAccess(sender.id, 'ai');
         setCanAccessChat(allowed);
       } catch (error) {
         console.error('Error checking chat access:', error);
@@ -72,9 +73,9 @@ export function AIChatInterface({ lawyer, userId }) {
           variant: 'destructive',
         });
       }
-    }
-    if (userId) checkAccess();
-  }, [userId, toast]);
+    } 
+    if (sender) checkAccess();
+  }, [sender]);
 
   // Modified fetchChats to return the chats
   const fetchChats = async () => {
@@ -142,8 +143,7 @@ export function AIChatInterface({ lawyer, userId }) {
 
   useEffect(() => {
     if (params.chatId) {
-      setSelectedChat(params.chatId);
-      console.log('selectedChat', params.chatId);
+      setSelectedChat(params.chatId); 
       fetchMessages(params.chatId);
     }
   }, [params.chatId]);
@@ -185,12 +185,12 @@ export function AIChatInterface({ lawyer, userId }) {
     setInput('');
 
     try {
-      setIsLoading(true);
+       
 
       // Check if user can send more messages
       const { allowed, remaining } = await incrementFeatureUsage(
-        userId,
-        'ai_chat'
+        sender.id,
+        'ai'
       );
 
       if (!allowed) {

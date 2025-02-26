@@ -50,8 +50,7 @@ export function LawyersProvider({ children }) {
         district: getDistricts(lawyer.state_id, lawyer.district_id),
         yearsOfExperience: lawyer.experience || 0,
         specializations: lawyer.specializations?.map(s => s.specializations.name) || []
-      }));
-
+      })); 
       // Add AI Lawyer card
       const aiLawyer = {
         id: '0',
